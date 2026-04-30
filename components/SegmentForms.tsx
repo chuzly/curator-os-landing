@@ -111,7 +111,8 @@ function CollectorForm() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const payload = {
       type: "collector",
       email: String(fd.get("email") ?? ""),
@@ -132,7 +133,7 @@ function CollectorForm() {
         throw new Error(data?.error ?? "Could not submit.");
       }
       setStatus("success");
-      e.currentTarget.reset();
+      form?.reset();
     } catch (err) {
       setStatus("error");
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
@@ -237,7 +238,8 @@ function VendorForm() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const payload = {
       type: "vendor",
       email: String(fd.get("email") ?? ""),
@@ -259,7 +261,7 @@ function VendorForm() {
         throw new Error(data?.error ?? "Could not submit.");
       }
       setStatus("success");
-      e.currentTarget.reset();
+      form?.reset();
     } catch (err) {
       setStatus("error");
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
