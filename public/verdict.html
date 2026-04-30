@@ -1179,7 +1179,8 @@
         asking: null,
         profile: "Collector",
 
-        pillarOverridden: new Set(),
+        pillarOverridden: new Set(),         // score field IDs: 'pA' | 'pB' | 'pC' | 'pD'
+        pillarReasonOverridden: new Set(),   // pillar letters: 'A' | 'B' | 'C' | 'D'
         tileOverrides: new Set(), // 'median' | 'range' | 'reprint' | 'opNote' — tap-to-edit in auto mode
         eduOpen: false,
         lastTier: null,
@@ -1420,39 +1421,23 @@
         const haveSpread = (asking !== null && median !== null && median > 0 && asking > 0);
         const spread = haveSpread ? ((asking - median) / median) * 100 : null;
 
-        // Pillar A
+        // Pillar A — score
         let a = 25;
         if (trend === "Rising")  a += 5;
         if (trend === "Falling") a -= 5;
         if (reprint === "Low")   a += 5;
         if (reprint === "High")  a -= 10;
         out.pA = clamp(a, 5, 40);
-        if (reprint === "Low")        out.pAExp = "Strong fundamentals, low reprint risk supports long-term hold";
-        else if (reprint === "Medium") out.pAExp = "Solid card, moderate reprint exposure to monitor";
-        else                          out.pAExp = "Print run risk dampens long-term thesis — discount required";
 
-        // Pillar B
+        // Pillar B — score
         let b = 18;
         if (trend === "Rising")  b += 6;
         if (trend === "Falling") b -= 6;
         if (nVal !== null && nVal >= 10) b += 2;
         if (nVal !== null && nVal > 0 && nVal <= 3) b -= 3;
         out.pB = clamp(b, 5, 30);
-        if (nVal !== null && nVal > 0 && nVal <= 3) {
-          out.pBExp = "Thin comp data — verdict is directional, not precise";
-        } else if (trend === "Rising" && nVal !== null && nVal >= 10) {
-          out.pBExp = "Active market, prices trending up with deep comp support";
-        } else if (trend === "Stable") {
-          out.pBExp = "Stable market with reasonable depth";
-        } else if (trend === "Falling") {
-          out.pBExp = "Cooling market — wait for stabilization";
-        } else if (trend === "Rising") {
-          out.pBExp = "Active market, prices trending up";
-        } else {
-          out.pBExp = "Stable market with reasonable depth";
-        }
 
-        // Pillar C
+        // Pillar C — score
         if (haveSpread) {
           if      (spread <= -20) out.pC = 18;
           else if (spread <= -10) out.pC = 15;
@@ -1460,16 +1445,11 @@
           else if (spread <=   5) out.pC = 8;
           else if (spread <=  10) out.pC = 5;
           else                    out.pC = 2;
-          if      (spread <= -15) out.pCExp = "Significant discount to comp median — strong pricing edge";
-          else if (spread <=  -5) out.pCExp = "Below median — favorable entry";
-          else if (spread <=   5) out.pCExp = "At market — no edge from price alone";
-          else                    out.pCExp = "Above median — paying premium, edge must come elsewhere";
         } else {
           out.pC = 10;
-          out.pCExp = "Awaiting asking and comp median to assess pricing edge";
         }
 
-        // Pillar D
+        // Pillar D — score
         if (haveSpread) {
           if (profile === "Collector") {
             out.pD = (spread <= 10) ? 8 : 5;
@@ -1487,13 +1467,108 @@
         } else {
           out.pD = 5;
         }
-        if (profile === "Collector")     out.pDExp = "Aligns with long-term hold thesis";
-        else if (profile === "Flipper")  out.pDExp = "Margin viability is the key constraint";
-        else if (profile === "Investor") out.pDExp = "Catalyst exposure justifies the entry";
-        else                             out.pDExp = "Profile not selected";
 
         return out;
       }
+
+      // ============================================================
+      // PILLAR REASONS — data-driven explanations per pillar
+      // Returns { A, B, C, D } strings; templated with live n / spread values.
+      // ============================================================
+      function computePillarReasons(state) {
+        const asking  = state.asking;
+        const median  = state.comps.median;
+        const nVal    = state.comps.n;
+        const trend   = state.comps.trend || "Stable";
+        const reprint = state.comps.reprintRisk || "Low";
+        const profile = state.profile;
+
+        // ---- Pillar A — Card fundamentals (reprint × trend) ----
+        let A;
+        if (reprint === "High") {
+          A = "Print run risk dampens long-term thesis — discount required to compensate";
+        } else if (reprint === "Low") {
+          if (trend === "Rising")       A = "Strong fundamentals — Reprint Low + Trend Rising support long-term thesis";
+          else if (trend === "Falling") A = "Quality card but cooling — wait for stabilization";
+          else                          A = "Solid card, low reprint risk supports patient hold";
+        } else { // Medium
+          if (trend === "Rising")       A = "Watching reprint exposure but momentum is real";
+          else if (trend === "Falling") A = "Reprint risk + cooling momentum = caution";
+          else                          A = "Moderate reprint risk, monitor for set rotations";
+        }
+
+        // ---- Pillar B — Market dynamics (n × trend) ----
+        let B;
+        if (nVal === null || nVal === undefined || nVal <= 0) {
+          B = "Comp depth unknown — verify before final commitment";
+        } else if (nVal >= 10) {
+          if (trend === "Rising")       B = `Active market with deep comp support (n=${nVal}) and rising trend`;
+          else if (trend === "Falling") B = `Deep comp data (n=${nVal}) but cooling — let it stabilize`;
+          else                          B = `Stable market with deep comp support (n=${nVal})`;
+        } else if (nVal >= 4) {
+          if (trend === "Rising")       B = `Reasonable market depth (n=${nVal}), rising trend supports thesis`;
+          else if (trend === "Falling") B = `Reasonable market depth (n=${nVal}), falling trend — caution`;
+          else                          B = `Reasonable market depth (n=${nVal}), stable conditions`;
+        } else { // 1..3
+          if (trend === "Rising")       B = `Thin comp data (n=${nVal}) but rising trend signals momentum — verdict directional`;
+          else if (trend === "Falling") B = `Thin comp data (n=${nVal}) and falling trend — high uncertainty`;
+          else                          B = `Thin comp data (n=${nVal}) — verdict is directional, not precise`;
+        }
+
+        // ---- Pillar C — Pricing edge (spread bands, templated %) ----
+        let C;
+        if (asking === null || asking === undefined || median === null || median === undefined) {
+          C = "Awaiting price data — fill in to evaluate edge";
+        } else if (median <= 0) {
+          C = "Median data invalid — cannot compute spread";
+        } else {
+          const spreadRaw = ((asking - median) / median) * 100;
+          const spreadAbs = Math.abs(spreadRaw).toFixed(1);
+          if      (spreadRaw <= -20) C = `Asking ${spreadAbs}% below median — significant pricing edge`;
+          else if (spreadRaw <= -10) C = `Asking ${spreadAbs}% below median — favorable entry`;
+          else if (spreadRaw <=  -5) C = `Slightly below median (${spreadAbs}%) — modest edge`;
+          else if (spreadRaw <   5)  C = "At market (within ±5%) — no edge from price alone";
+          else if (spreadRaw <  10)  C = `Asking ${spreadAbs}% above median — minor premium, defensible if catalysts strong`;
+          else                       C = `Asking ${spreadAbs}% above median — paying premium, edge must come from elsewhere`;
+        }
+
+        // ---- Pillar D — User fit (profile × spread × reprint) ----
+        let D;
+        const haveSpreadD = (asking !== null && asking !== undefined && median !== null && median !== undefined && median > 0);
+        if (!haveSpreadD) {
+          D = "Awaiting price data — pillar inactive";
+        } else {
+          const spreadD = ((asking - median) / median) * 100;
+          if (profile === "Collector") {
+            D = (spreadD <= 10)
+              ? "Aligns with Collector long-term hold thesis — within tolerance"
+              : "Spread exceeds Collector tolerance (+10% ceiling) — wait for pullback";
+          } else if (profile === "Flipper") {
+            if      (spreadD <= -15) D = "Strong flip margin — meets Flipper threshold (-15% or better)";
+            else if (spreadD <=  -5) D = "Flippable margin but tight — verify exit liquidity";
+            else                     D = "No flip margin — Flipper thesis fails at this price";
+          } else if (profile === "Investor") {
+            if (reprint === "Low") {
+              D = (spreadD <= 20)
+                ? "Investor thesis viable — low reprint + spread within tolerance"
+                : "Premium too steep even for low-reprint Investor case";
+            } else { // Medium / High
+              D = (spreadD <= -5)
+                ? "Risk-off Investor entry — discount compensates for reprint exposure"
+                : "Investor thesis fragile — reprint exposure not priced in";
+            }
+          } else {
+            D = "Profile not selected";
+          }
+        }
+
+        return { A, B, C, D };
+      }
+
+      // Score IDs <-> reason field IDs <-> reason letter keys.
+      const pillarScoreSet = new Set(pillarScoreIds);
+      const pillarReasonByField = { pAExp: "A", pBExp: "B", pCExp: "C", pDExp: "D" };
+      const pillarReasonByLetter = { A: "pAExp", B: "pBExp", C: "pCExp", D: "pDExp" };
 
       function applyPillarDefaults() {
         const asking = state.asking;
@@ -1501,10 +1576,22 @@
         const reprint = state.comps.reprintRisk || "Low";
         const trend = state.comps.trend || "Stable";
         const nVal = state.comps.n;
-        const defaults = computePillarDefaults(asking, median, state.profile, reprint, trend, nVal);
-        for (const id of pillarFieldIds) {
+
+        const scoreDefaults = computePillarDefaults(asking, median, state.profile, reprint, trend, nVal);
+        const reasonDefaults = computePillarReasons(state);
+
+        // Scores (state.pillarOverridden tracks 'pA'/'pB'/'pC'/'pD')
+        for (const id of pillarScoreIds) {
           if (state.pillarOverridden.has(id)) continue;
-          els[id].value = defaults[id];
+          els[id].value = scoreDefaults[id];
+          els[id].classList.add("is-default");
+        }
+
+        // Reasons (state.pillarReasonOverridden tracks 'A'/'B'/'C'/'D')
+        for (const letter of ["A","B","C","D"]) {
+          if (state.pillarReasonOverridden.has(letter)) continue;
+          const id = pillarReasonByLetter[letter];
+          els[id].value = reasonDefaults[letter];
           els[id].classList.add("is-default");
         }
       }
@@ -1684,6 +1771,7 @@
         state.asking = null;
         state.profile = "Collector";
         state.pillarOverridden.clear();
+        state.pillarReasonOverridden.clear();
         state.tileOverrides.clear();
         state.eduOpen = false;
         state.lastTier = null;
@@ -1952,6 +2040,7 @@
         // Reset asking + per-tile + pillar overrides for a fresh verdict
         state.asking = null;
         state.pillarOverridden.clear();
+        state.pillarReasonOverridden.clear();
         state.tileOverrides.clear();
         state.lastTier = null;
         els.vAsking.value = "";
@@ -2040,10 +2129,16 @@
         startTileEdit("opNote", els.mManNote);
       });
 
-      // Pillar inputs — track override + re-render
+      // Pillar inputs — track override + re-render. Scores and reasons feed
+      // into separate Sets so reason edits don't dirty the score-default flag
+      // (and vice-versa).
       pillarFieldIds.forEach((id) => {
         els[id].addEventListener("input", () => {
-          state.pillarOverridden.add(id);
+          if (pillarScoreSet.has(id)) {
+            state.pillarOverridden.add(id);
+          } else if (id in pillarReasonByField) {
+            state.pillarReasonOverridden.add(pillarReasonByField[id]);
+          }
           els[id].classList.remove("is-default");
           renderVerdictView();
         });
