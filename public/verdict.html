@@ -419,8 +419,103 @@
       font-style: italic;
       color: rgba(255,255,255,0.92);
       font-size: 13px; line-height: 1.5;
+      cursor: pointer;
+      transition: border-left-width 120ms;
     }
     .op-note.empty { color: rgba(255,255,255,0.32); }
+    .op-note.editing { cursor: default; padding: 8px 12px; }
+    .op-note > p { margin: 0; }
+    .op-note-textarea {
+      width: 100%;
+      background: transparent; border: 0;
+      color: rgba(255,255,255,0.92);
+      font-family: 'Inter', sans-serif;
+      font-style: italic;
+      font-size: 13px; line-height: 1.5;
+      padding: 0; margin: 0;
+      resize: none; min-height: 50px;
+      outline: none;
+    }
+    .op-note-textarea::placeholder {
+      color: rgba(255,255,255,0.32);
+      font-style: italic;
+    }
+
+    /* Dual-mode metric tiles */
+    .metric.tappable {
+      cursor: pointer;
+      transition: border-color 120ms;
+    }
+    .metric.tappable:hover { border-color: rgba(93,202,165,0.30); }
+    .metric.editing {
+      cursor: default;
+      border-color: rgba(93,202,165,0.30);
+    }
+    .metric.editing:hover { border-color: rgba(93,202,165,0.30); }
+    .tile-edit-row { display: flex; align-items: baseline; gap: 6px; }
+    .tile-edit-prefix {
+      font-family: ui-monospace, monospace;
+      font-size: 22px; font-weight: 600; color: rgba(255,255,255,0.55);
+      flex: 0 0 auto;
+    }
+    .tile-edit-input {
+      flex: 1; min-width: 0;
+      background: transparent; border: 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.20);
+      color: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 26px; font-weight: 600; letter-spacing: -0.01em;
+      padding: 0 0 2px 0; outline: none;
+      transition: border-color 120ms;
+    }
+    .tile-edit-input:focus { border-bottom-color: #5DCAA5; }
+    .tile-edit-input::placeholder { color: rgba(255,255,255,0.25); }
+    .tile-edit-sub-row {
+      display: flex; align-items: baseline; gap: 8px;
+      margin-top: 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px; color: rgba(255,255,255,0.55);
+    }
+    .tile-edit-mini-label { letter-spacing: 0.10em; }
+    .tile-edit-input-mini {
+      width: 50px; background: transparent;
+      border: 0; border-bottom: 1px dashed rgba(255,255,255,0.20);
+      color: #fff; font: 600 11px/1 ui-monospace, monospace;
+      padding: 1px 2px; outline: none;
+    }
+    .tile-edit-input-mini:focus { border-bottom-color: #5DCAA5; }
+    .tile-edit-input-mini::placeholder { color: rgba(255,255,255,0.25); }
+    .tile-edit-select {
+      background: transparent; border: 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.20);
+      color: #fff; font: 600 11px/1 ui-monospace, monospace;
+      padding: 1px 14px 1px 2px; outline: none;
+      appearance: none; -webkit-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.50) 50%),
+        linear-gradient(135deg, rgba(255,255,255,0.50) 50%, transparent 50%);
+      background-position: calc(100% - 8px) 50%, calc(100% - 4px) 50%;
+      background-size: 4px 4px; background-repeat: no-repeat;
+    }
+    .tile-edit-select:focus { border-bottom-color: #5DCAA5; }
+    .tile-edit-select option { background: #0f1e34; color: #fff; }
+    .reprint-edit-select {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.30);
+      color: #fff;
+      font: 600 11px/1 ui-monospace, monospace;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      padding: 6px 26px 6px 12px;
+      outline: none; margin-top: 2px;
+      appearance: none; -webkit-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.55) 50%),
+        linear-gradient(135deg, rgba(255,255,255,0.55) 50%, transparent 50%);
+      background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+      background-size: 5px 5px; background-repeat: no-repeat;
+    }
+    .reprint-edit-select:focus { border-color: #5DCAA5; }
+    .reprint-edit-select option { background: #0f1e34; color: #fff; }
 
     /* Educator panel */
     .edu {
@@ -680,7 +775,7 @@
         <!-- Loading state -->
         <div class="id-loading" data-state="loading">
           <div class="spinner"></div>
-          <p class="loading-text">Looking up card... (up to 45 seconds — first call cold-starts)</p>
+          <p class="loading-text">Looking up card... (up to 30 seconds)</p>
         </div>
 
         <!-- Result state -->
@@ -779,7 +874,7 @@
       <!-- Loading state -->
       <div class="id-loading" data-state="loading" style="margin: 0 auto;">
         <div class="spinner"></div>
-        <p class="loading-text">Looking up comps... (up to 45 seconds — first call cold-starts)</p>
+        <p class="loading-text">Looking up comps... (up to 30 seconds)</p>
       </div>
 
       <!-- Result state -->
@@ -805,26 +900,76 @@
           <p id="vDelta" class="v-delta"></p>
         </div>
 
-        <!-- Metric grid -->
+        <!-- Metric grid (3 tiles dual-mode; Asking is display-only mirror of input row above) -->
         <div class="metric-grid">
+
+          <!-- Asking — read-only display; mirrors input above -->
           <div class="metric">
             <div class="metric-label">Asking</div>
             <div id="cAsking" class="metric-value">RM —</div>
           </div>
-          <div class="metric">
+
+          <!-- Sold median (with n + trend) — tappable / editable -->
+          <div class="metric tappable" data-tile="median">
             <div class="metric-label">Sold median</div>
-            <div id="cMedian" class="metric-value">RM —</div>
-            <div id="cMedianSub" class="metric-sub" style="visibility:hidden;">n=—</div>
+            <div data-tile-view>
+              <div id="cMedian" class="metric-value">RM —</div>
+              <div id="cMedianSub" class="metric-sub" style="visibility:hidden;">n=— · Trend: Stable</div>
+            </div>
+            <div data-tile-edit hidden>
+              <div class="tile-edit-row">
+                <span class="tile-edit-prefix">RM</span>
+                <input id="mManMedian" type="number" inputmode="numeric" min="0" placeholder="0" class="tile-edit-input" />
+              </div>
+              <div class="tile-edit-sub-row">
+                <span class="tile-edit-mini-label">n</span>
+                <input id="mManN" type="number" inputmode="numeric" min="0" placeholder="—" class="tile-edit-input-mini" />
+                <span style="color:rgba(255,255,255,0.30);">·</span>
+                <span class="tile-edit-mini-label">Trend</span>
+                <select id="mManTrend" class="tile-edit-select">
+                  <option>Rising</option>
+                  <option selected>Stable</option>
+                  <option>Falling</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="metric">
+
+          <!-- Sold range — tappable / editable -->
+          <div class="metric tappable" data-tile="range">
             <div class="metric-label">Sold range</div>
-            <div id="cRange" class="metric-value">RM — – —</div>
-            <div id="cSource" class="metric-sub" style="visibility:hidden;">source: —</div>
+            <div data-tile-view>
+              <div id="cRange" class="metric-value">RM — – —</div>
+              <div id="cSource" class="metric-sub" style="visibility:hidden;">source: —</div>
+            </div>
+            <div data-tile-edit hidden>
+              <div class="tile-edit-row">
+                <span class="tile-edit-prefix">RM</span>
+                <input id="mManLow" type="number" inputmode="numeric" min="0" placeholder="low" class="tile-edit-input" style="font-size:22px;" />
+                <span class="tile-edit-prefix" style="font-size:18px; color:rgba(255,255,255,0.35);">–</span>
+                <input id="mManHigh" type="number" inputmode="numeric" min="0" placeholder="high" class="tile-edit-input" style="font-size:22px;" />
+              </div>
+              <div class="tile-edit-sub-row">
+                <span class="tile-edit-mini-label">low – high (RM)</span>
+              </div>
+            </div>
           </div>
-          <div class="metric">
+
+          <!-- Reprint risk — tappable / editable -->
+          <div class="metric tappable" data-tile="reprint">
             <div class="metric-label">Reprint risk</div>
-            <div style="margin-top:2px;"><span id="cReprint" class="badge b-low">Low</span></div>
+            <div data-tile-view>
+              <div style="margin-top:2px;"><span id="cReprint" class="badge b-low">Low</span></div>
+            </div>
+            <div data-tile-edit hidden>
+              <select id="mManReprint" class="reprint-edit-select">
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
           </div>
+
         </div>
 
         <!-- Profile pills -->
@@ -837,8 +982,12 @@
           </div>
         </div>
 
-        <!-- Operator note -->
-        <div id="opNoteDisplay" class="op-note empty">Operator note appears here</div>
+        <!-- Operator note — tappable / editable -->
+        <div id="opNote" class="op-note empty">
+          <p id="opNoteText" data-note-view>Operator note appears here</p>
+          <textarea id="mManNote" data-note-edit hidden class="op-note-textarea" rows="2"
+            placeholder="Sold comps cluster 720–780 last 30 days. Bid lower."></textarea>
+        </div>
 
         <!-- Educator panel -->
         <div class="edu" id="eduPanel">
@@ -891,49 +1040,6 @@
           <span class="label" style="color:#5DCAA5;">STEAL ≤</span> <span id="stealAt">RM —</span>
           <span class="sep">|</span>
           <span class="label" style="color:#F09595;">WALK ≥</span> <span id="walkAt">RM —</span>
-        </div>
-
-        <!-- Manual comps form (manual mode only) -->
-        <div id="manualCompsForm" class="manual-comps" style="display:none;">
-          <h3>Enter comps manually</h3>
-          <div class="manual-grid">
-            <div>
-              <label class="field-label">Sold median (RM)</label>
-              <input id="mManMedian" class="input" type="number" inputmode="numeric" min="0" placeholder="0" />
-            </div>
-            <div>
-              <label class="field-label">Range low</label>
-              <input id="mManLow" class="input" type="number" inputmode="numeric" min="0" placeholder="0" />
-            </div>
-            <div>
-              <label class="field-label">Range high</label>
-              <input id="mManHigh" class="input" type="number" inputmode="numeric" min="0" placeholder="0" />
-            </div>
-            <div>
-              <label class="field-label">n (count)</label>
-              <input id="mManN" class="input" type="number" inputmode="numeric" min="0" placeholder="—" />
-            </div>
-            <div>
-              <label class="field-label">Reprint risk</label>
-              <select id="mManReprint" class="input">
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-            </div>
-            <div>
-              <label class="field-label">Trend</label>
-              <select id="mManTrend" class="input">
-                <option>Rising</option>
-                <option selected>Stable</option>
-                <option>Falling</option>
-              </select>
-            </div>
-          </div>
-          <div style="margin-top:10px;">
-            <label class="field-label">Operator note</label>
-            <textarea id="mManNote" class="input" rows="2" placeholder="Sold comps cluster 720–780 last 30 days. Bid lower."></textarea>
-          </div>
         </div>
 
         <!-- CTA -->
@@ -1074,6 +1180,7 @@
         profile: "Collector",
 
         pillarOverridden: new Set(),
+        tileOverrides: new Set(), // 'median' | 'range' | 'reprint' | 'opNote' — tap-to-edit in auto mode
         eduOpen: false,
         lastTier: null,
 
@@ -1140,7 +1247,9 @@
         cRange: $("#cRange"),
         cSource: $("#cSource"),
         cReprint: $("#cReprint"),
-        opNoteDisplay: $("#opNoteDisplay"),
+        opNote: $("#opNote"),
+        opNoteText: $("#opNoteText"),
+        tappableTiles: $$('[data-tile]'),
         thresholdsRow: $("#thresholdsRow"),
         stealAt: $("#stealAt"),
         walkAt: $("#walkAt"),
@@ -1153,7 +1262,6 @@
         pA: $("#pA"), pB: $("#pB"), pC: $("#pC"), pD: $("#pD"),
         pAExp: $("#pAExp"), pBExp: $("#pBExp"), pCExp: $("#pCExp"), pDExp: $("#pDExp"),
 
-        manualCompsForm: $("#manualCompsForm"),
         mManMedian: $("#mManMedian"),
         mManLow: $("#mManLow"),
         mManHigh: $("#mManHigh"),
@@ -1418,10 +1526,14 @@
         // Asking metric
         els.cAsking.textContent = fmtRM(state.asking) ?? "RM —";
 
-        // Median
+        // Median (sub-line shows n + trend)
         els.cMedian.textContent = fmtRM(state.comps.median) ?? "RM —";
-        if (state.comps.n !== null && state.comps.n !== undefined && state.comps.n > 0) {
-          els.cMedianSub.textContent = `n=${state.comps.n}`;
+        const trendLabel = state.comps.trend || "Stable";
+        const hasN = state.comps.n !== null && state.comps.n !== undefined && state.comps.n > 0;
+        if (state.comps.median !== null && state.comps.median !== undefined) {
+          els.cMedianSub.textContent = hasN
+            ? `n=${state.comps.n} · Trend: ${trendLabel}`
+            : `Trend: ${trendLabel}`;
           els.cMedianSub.style.visibility = "visible";
         } else {
           els.cMedianSub.style.visibility = "hidden";
@@ -1451,24 +1563,50 @@
         else if (reprint === "Medium") els.cReprint.classList.add("b-medium");
         else                          els.cReprint.classList.add("b-high");
 
-        // Operator note
+        // Operator note dual-mode (tappable in auto, editable in manual)
         const note = state.comps.operatorNote || "";
-        if (note.trim()) {
-          els.opNoteDisplay.textContent = note;
-          els.opNoteDisplay.classList.remove("empty");
+        const noteEditable = isTileEditable("opNote");
+        const noteView  = els.opNote.querySelector('[data-note-view]');
+        const noteEdit  = els.opNote.querySelector('[data-note-edit]');
+        if (noteEditable) {
+          noteView.hidden = true;
+          noteEdit.hidden = false;
+          els.opNote.classList.add("editing");
+          els.opNote.classList.remove("empty");
         } else {
-          els.opNoteDisplay.textContent = "Operator note appears here";
-          els.opNoteDisplay.classList.add("empty");
+          noteView.hidden = false;
+          noteEdit.hidden = true;
+          els.opNote.classList.remove("editing");
+          if (note.trim()) {
+            els.opNoteText.textContent = note;
+            els.opNote.classList.remove("empty");
+          } else {
+            els.opNoteText.textContent = "Operator note appears here";
+            els.opNote.classList.add("empty");
+          }
         }
+
+        // Tile dual-mode: median / range / reprint
+        ["median","range","reprint"].forEach((tileId) => {
+          const tile = document.querySelector(`[data-tile="${tileId}"]`);
+          if (!tile) return;
+          const view = tile.querySelector('[data-tile-view]');
+          const edit = tile.querySelector('[data-tile-edit]');
+          const editable = isTileEditable(tileId);
+          if (view) view.hidden = editable;
+          if (edit) edit.hidden = !editable;
+          tile.classList.toggle("editing", editable);
+          tile.classList.toggle("tappable", !editable);
+        });
 
         // Profile pills
         for (const btn of els.profilePills) {
           btn.classList.toggle("active", btn.dataset.profile === state.profile);
         }
 
-        // Manual mode banner / form visibility
+        // Manual mode banner — only when full manual (API failed / user-chosen),
+        // NOT when operator just tapped a single tile to override.
         els.compsManualBanner.style.display = state.compsManual ? "" : "none";
-        els.manualCompsForm.style.display = state.compsManual ? "" : "none";
 
         // Apply pillar defaults
         applyPillarDefaults();
@@ -1546,6 +1684,7 @@
         state.asking = null;
         state.profile = "Collector";
         state.pillarOverridden.clear();
+        state.tileOverrides.clear();
         state.eduOpen = false;
         state.lastTier = null;
 
@@ -1810,11 +1949,22 @@
         }
 
         setCompsState("result");
-        // Reset asking + pillar overrides for a fresh verdict
+        // Reset asking + per-tile + pillar overrides for a fresh verdict
         state.asking = null;
         state.pillarOverridden.clear();
+        state.tileOverrides.clear();
         state.lastTier = null;
         els.vAsking.value = "";
+        // Sync manual-mode inputs to current state.comps so the editable view
+        // reflects API values when full-manual fires, and so any stale value
+        // from a prior demo gets overwritten.
+        els.mManMedian.value = state.comps.median ?? "";
+        els.mManLow.value = state.comps.rangeLow ?? "";
+        els.mManHigh.value = state.comps.rangeHigh ?? "";
+        els.mManN.value = state.comps.n ?? "";
+        els.mManReprint.value = state.comps.reprintRisk || "Low";
+        els.mManTrend.value = state.comps.trend || "Stable";
+        els.mManNote.value = state.comps.operatorNote || "";
         renderVerdictView();
         // Focus asking input so the operator can start typing immediately
         setTimeout(() => els.vAsking.focus(), 50);
@@ -1834,7 +1984,7 @@
         });
       });
 
-      // Manual comps form inputs
+      // Manual / tap-to-edit inputs (live inside the metric tiles + op-note)
       els.mManMedian.addEventListener("input", () => { state.comps.median = num(els.mManMedian); renderVerdictView(); });
       els.mManLow.addEventListener("input", () => { state.comps.rangeLow = num(els.mManLow); renderVerdictView(); });
       els.mManHigh.addEventListener("input", () => { state.comps.rangeHigh = num(els.mManHigh); renderVerdictView(); });
@@ -1842,6 +1992,53 @@
       els.mManReprint.addEventListener("change", () => { state.comps.reprintRisk = els.mManReprint.value; renderVerdictView(); });
       els.mManTrend.addEventListener("change", () => { state.comps.trend = els.mManTrend.value; renderVerdictView(); });
       els.mManNote.addEventListener("input", () => { state.comps.operatorNote = els.mManNote.value; renderVerdictView(); });
+
+      // Tap-to-edit helpers: in auto mode, tapping a tile flips it to edit mode
+      // (per-tile override — surrounding tiles stay read-only).
+      function isTileEditable(tileId) {
+        return state.compsManual || state.tileOverrides.has(tileId);
+      }
+
+      function prefillTile(tileId) {
+        if (tileId === "median") {
+          els.mManMedian.value = state.comps.median ?? "";
+          els.mManN.value = state.comps.n ?? "";
+          els.mManTrend.value = state.comps.trend || "Stable";
+        } else if (tileId === "range") {
+          els.mManLow.value = state.comps.rangeLow ?? "";
+          els.mManHigh.value = state.comps.rangeHigh ?? "";
+        } else if (tileId === "reprint") {
+          els.mManReprint.value = state.comps.reprintRisk || "Low";
+        } else if (tileId === "opNote") {
+          els.mManNote.value = state.comps.operatorNote || "";
+        }
+      }
+
+      function startTileEdit(tileId, focusEl) {
+        if (state.compsManual) return;
+        if (state.tileOverrides.has(tileId)) return;
+        state.tileOverrides.add(tileId);
+        prefillTile(tileId);
+        renderVerdictView();
+        if (focusEl) setTimeout(() => focusEl.focus(), 0);
+      }
+
+      els.tappableTiles.forEach((tile) => {
+        tile.addEventListener("click", (e) => {
+          // Ignore clicks that originate inside the (visible) edit block
+          if (e.target.closest("[data-tile-edit]")) return;
+          const tileId = tile.dataset.tile;
+          const firstInput = tile.querySelector(
+            "[data-tile-edit] input, [data-tile-edit] select, [data-tile-edit] textarea",
+          );
+          startTileEdit(tileId, firstInput);
+        });
+      });
+
+      els.opNote.addEventListener("click", (e) => {
+        if (e.target.closest("[data-note-edit]")) return;
+        startTileEdit("opNote", els.mManNote);
+      });
 
       // Pillar inputs — track override + re-render
       pillarFieldIds.forEach((id) => {
