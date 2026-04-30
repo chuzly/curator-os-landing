@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
+import FormFeedback from "@/components/FormFeedback";
 
 type Segment = "collector" | "vendor";
 type Status = "idle" | "submitting" | "success" | "error";
@@ -84,23 +85,10 @@ export default function SegmentForms() {
   );
 }
 
-function StatusLine({
-  status,
-  errorMsg,
-}: {
-  status: Status;
-  errorMsg: string | null;
-}) {
+function SuccessPanel({ text }: { text: string }) {
   return (
-    <div className="mt-4 min-h-[1.25rem] text-xs">
-      {status === "success" && (
-        <span className="text-navy-500">
-          Received. We&apos;ll reach out as we open access.
-        </span>
-      )}
-      {status === "error" && (
-        <span className="text-accent">{errorMsg ?? "Something went wrong."}</span>
-      )}
+    <div className="border border-rule bg-white p-6 sm:p-8">
+      <FormFeedback status="success" errorMsg={null} successText={text} />
     </div>
   );
 }
@@ -108,6 +96,13 @@ function StatusLine({
 function CollectorForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  function clearErrorOnInput() {
+    if (status === "error") {
+      setStatus("idle");
+      setErrorMsg(null);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -132,6 +127,7 @@ function CollectorForm() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "Could not submit.");
       }
+      setErrorMsg(null);
       setStatus("success");
       form?.reset();
     } catch (err) {
@@ -140,9 +136,15 @@ function CollectorForm() {
     }
   }
 
+  if (status === "success") {
+    return <SuccessPanel text="Received. We'll reach out as we open access." />;
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
+      onInput={clearErrorOnInput}
+      onChange={clearErrorOnInput}
       className="grid grid-cols-1 gap-5 border border-rule bg-white p-6 sm:p-8 md:grid-cols-2"
       noValidate
     >
@@ -154,6 +156,11 @@ function CollectorForm() {
           id="c-email"
           name="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
           required
           className="input-base"
           placeholder="you@domain.com"
@@ -218,7 +225,10 @@ function CollectorForm() {
         />
       </div>
 
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 space-y-4">
+        {status === "error" && (
+          <FormFeedback status="error" errorMsg={errorMsg} successText="" />
+        )}
         <button
           type="submit"
           disabled={status === "submitting"}
@@ -226,7 +236,6 @@ function CollectorForm() {
         >
           {status === "submitting" ? "Submitting..." : "Join as collector"}
         </button>
-        <StatusLine status={status} errorMsg={errorMsg} />
       </div>
     </form>
   );
@@ -235,6 +244,13 @@ function CollectorForm() {
 function VendorForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  function clearErrorOnInput() {
+    if (status === "error") {
+      setStatus("idle");
+      setErrorMsg(null);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -260,6 +276,7 @@ function VendorForm() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "Could not submit.");
       }
+      setErrorMsg(null);
       setStatus("success");
       form?.reset();
     } catch (err) {
@@ -268,9 +285,15 @@ function VendorForm() {
     }
   }
 
+  if (status === "success") {
+    return <SuccessPanel text="Received. We'll reach out as we open access." />;
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
+      onInput={clearErrorOnInput}
+      onChange={clearErrorOnInput}
       className="grid grid-cols-1 gap-5 border border-rule bg-white p-6 sm:p-8 md:grid-cols-2"
       noValidate
     >
@@ -282,6 +305,11 @@ function VendorForm() {
           id="v-email"
           name="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
           required
           className="input-base"
           placeholder="you@business.com"
@@ -296,6 +324,7 @@ function VendorForm() {
           id="v-business"
           name="businessName"
           type="text"
+          autoComplete="organization"
           required
           className="input-base"
           placeholder="Registered or trading name"
@@ -310,6 +339,7 @@ function VendorForm() {
           id="v-city"
           name="city"
           type="text"
+          autoComplete="address-level2"
           required
           className="input-base"
           placeholder="e.g. Kuala Lumpur, Singapore, Tokyo"
@@ -352,7 +382,10 @@ function VendorForm() {
         />
       </div>
 
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 space-y-4">
+        {status === "error" && (
+          <FormFeedback status="error" errorMsg={errorMsg} successText="" />
+        )}
         <button
           type="submit"
           disabled={status === "submitting"}
@@ -360,7 +393,6 @@ function VendorForm() {
         >
           {status === "submitting" ? "Submitting..." : "Join as vendor"}
         </button>
-        <StatusLine status={status} errorMsg={errorMsg} />
       </div>
     </form>
   );

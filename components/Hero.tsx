@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import FormFeedback from "@/components/FormFeedback";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -8,6 +9,13 @@ export default function Hero() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  function clearErrorOnInput() {
+    if (status === "error") {
+      setStatus("idle");
+      setErrorMsg(null);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,6 +32,7 @@ export default function Hero() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "Could not join the waitlist.");
       }
+      setErrorMsg(null);
       setStatus("success");
       setEmail("");
     } catch (err) {
@@ -61,45 +70,63 @@ export default function Hero() {
           data, capital discipline, and verdicts that adapt to your thesis.
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
-          noValidate
-        >
-          <label htmlFor="hero-email" className="sr-only">
-            Email address
-          </label>
-          <input
-            id="hero-email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@domain.com"
-            disabled={status === "submitting"}
-            className="input-base flex-1"
-          />
-          <button
-            type="submit"
-            disabled={status === "submitting"}
-            className="btn-primary"
-          >
-            {status === "submitting" ? "Joining..." : "Join waitlist"}
-          </button>
-        </form>
+        {status === "success" ? (
+          <div className="mt-10 max-w-xl">
+            <FormFeedback
+              status="success"
+              errorMsg={null}
+              successText="You're in. We'll be in touch."
+            />
+          </div>
+        ) : (
+          <>
+            <form
+              onSubmit={handleSubmit}
+              className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
+              noValidate
+            >
+              <label htmlFor="hero-email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="hero-email"
+                name="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                required
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearErrorOnInput();
+                }}
+                placeholder="you@domain.com"
+                disabled={status === "submitting"}
+                className="input-base flex-1"
+              />
+              <button
+                type="submit"
+                disabled={status === "submitting"}
+                className="btn-primary"
+              >
+                {status === "submitting" ? "Joining..." : "Join waitlist"}
+              </button>
+            </form>
 
-        <div className="mt-3 min-h-[1.25rem] text-xs">
-          {status === "success" && (
-            <span className="text-navy-500">
-              You&apos;re on the list. We&apos;ll be in touch.
-            </span>
-          )}
-          {status === "error" && (
-            <span className="text-accent">
-              {errorMsg ?? "Something went wrong."}
-            </span>
-          )}
-        </div>
+            {status === "error" && (
+              <div className="mt-4 max-w-xl">
+                <FormFeedback
+                  status="error"
+                  errorMsg={errorMsg}
+                  successText=""
+                />
+              </div>
+            )}
+          </>
+        )}
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <span className="eyebrow mr-1">I am a</span>
