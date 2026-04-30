@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 type CompsResult = {
   median: number;
@@ -115,6 +115,12 @@ export async function POST(req: Request) {
 
   const client = new Anthropic({ apiKey });
 
+  console.log(
+    "[get-comps] starting, payload:",
+    JSON.stringify(body).slice(0, 200),
+  );
+  const t0 = Date.now();
+
   try {
     const response = await client.messages.create(
       {
@@ -126,11 +132,15 @@ export async function POST(req: Request) {
           {
             type: "web_search_20260209",
             name: "web_search",
-            max_uses: 3,
+            max_uses: 2,
           } as unknown as Anthropic.Messages.ToolUnion,
         ],
       },
-      { timeout: 20_000 },
+      { timeout: 45_000 },
+    );
+
+    console.log(
+      `[get-comps] Anthropic call complete in ${Date.now() - t0}ms, stop_reason=${response.stop_reason}`,
     );
 
     // Find the last text block — that's the model's final answer after any tool use.
@@ -151,15 +161,16 @@ export async function POST(req: Request) {
 
     return NextResponse.json(parsed);
   } catch (err) {
+    console.error("[get-comps] error:", err);
+    console.error(`[get-comps] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      console.error("[get-comps] timeout after 20s");
+      console.error("[get-comps] timeout after 45s");
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
     if (err instanceof Anthropic.APIError) {
       console.error("[get-comps] Anthropic API error:", err.status, err.message);
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
-    console.error("[get-comps] unexpected:", err);
     return NextResponse.json({ error: "comps_failed" }, { status: 502 });
   }
 }

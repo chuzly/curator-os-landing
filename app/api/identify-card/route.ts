@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 type IdentifyResult = {
   cardName: string;
@@ -65,6 +65,12 @@ export async function POST(req: Request) {
 
   const client = new Anthropic({ apiKey });
 
+  console.log(
+    "[identify-card] starting, payload:",
+    JSON.stringify({ imageBytes: imageBase64.length, mediaType }).slice(0, 200),
+  );
+  const t0 = Date.now();
+
   try {
     const response = await client.messages.create(
       {
@@ -87,7 +93,11 @@ export async function POST(req: Request) {
           format: { type: "json_schema", schema: cardSchema },
         },
       },
-      { timeout: 20_000 },
+      { timeout: 45_000 },
+    );
+
+    console.log(
+      `[identify-card] Anthropic call complete in ${Date.now() - t0}ms, stop_reason=${response.stop_reason}`,
     );
 
     const textBlock = response.content.find(
@@ -108,15 +118,16 @@ export async function POST(req: Request) {
 
     return NextResponse.json(parsed);
   } catch (err) {
+    console.error("[identify-card] error:", err);
+    console.error(`[identify-card] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      console.error("[identify-card] timeout after 20s");
+      console.error("[identify-card] timeout after 45s");
       return NextResponse.json({ error: "identification_failed" }, { status: 502 });
     }
     if (err instanceof Anthropic.APIError) {
       console.error("[identify-card] Anthropic API error:", err.status, err.message);
       return NextResponse.json({ error: "identification_failed" }, { status: 502 });
     }
-    console.error("[identify-card] unexpected:", err);
     return NextResponse.json({ error: "identification_failed" }, { status: 502 });
   }
 }
