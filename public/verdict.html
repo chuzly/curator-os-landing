@@ -273,6 +273,12 @@
     .pillar-reason:focus { border-bottom-color: #5DCAA5; }
     .pillar-reason::placeholder { color: rgba(255,255,255,0.25); }
 
+    /* Auto-suggested defaults — visually dimmer until operator overrides */
+    .pillar-score-input.is-default { color: rgba(255,255,255,0.50); }
+    .pillar-reason.is-default      { color: rgba(255,255,255,0.50); }
+    #composite.is-default,
+    #compositeBig.is-default       { color: rgba(255,255,255,0.45); }
+
     .composite-row {
       margin-top: 10px;
       padding-top: 10px;
@@ -652,6 +658,109 @@
         return "WALK";
       }
 
+      // ---------- Pillar defaults ----------
+      // Operator overrides win over computed defaults; once a pillar field is
+      // typed into, it stays operator-owned until Reset.
+      const pillarFieldIds = ["pA","pB","pC","pD","pAExp","pBExp","pCExp","pDExp"];
+      const pillarScoreIds = ["pA","pB","pC","pD"];
+      const pillarFieldSet = new Set(pillarFieldIds);
+      const overridden = new Set();
+
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function computePillarDefaults(asking, median, profile, reprint, trend, nVal) {
+        const out = {};
+        const haveSpread = (asking !== null && median !== null && median > 0 && asking > 0);
+        const spread = haveSpread ? ((asking - median) / median) * 100 : null;
+
+        // Pillar A — Card fundamentals (max 40), base 25
+        let a = 25;
+        if (trend === "Rising")  a += 5;
+        if (trend === "Falling") a -= 5;
+        if (reprint === "Low")   a += 5;
+        if (reprint === "High")  a -= 10;
+        out.pA = clamp(a, 5, 40);
+
+        if (reprint === "Low")        out.pAExp = "Strong fundamentals, low reprint risk supports long-term hold";
+        else if (reprint === "Medium") out.pAExp = "Solid card, moderate reprint exposure to monitor";
+        else                          out.pAExp = "Print run risk dampens long-term thesis — discount required";
+
+        // Pillar B — Market dynamics (max 30), base 18
+        let b = 18;
+        if (trend === "Rising")  b += 6;
+        if (trend === "Falling") b -= 6;
+        if (nVal !== null && nVal >= 10) b += 2;
+        if (nVal !== null && nVal > 0 && nVal <= 3) b -= 3;
+        out.pB = clamp(b, 5, 30);
+
+        if (nVal !== null && nVal > 0 && nVal <= 3) {
+          out.pBExp = "Thin comp data — verdict is directional, not precise";
+        } else if (trend === "Rising" && nVal !== null && nVal >= 10) {
+          out.pBExp = "Active market, prices trending up with deep comp support";
+        } else if (trend === "Stable") {
+          out.pBExp = "Stable market with reasonable depth";
+        } else if (trend === "Falling") {
+          out.pBExp = "Cooling market — wait for stabilization";
+        } else if (trend === "Rising") {
+          out.pBExp = "Active market, prices trending up";
+        } else {
+          out.pBExp = "Stable market with reasonable depth";
+        }
+
+        // Pillar C — Pricing edge (max 20), driven by spread
+        if (haveSpread) {
+          if      (spread <= -20) out.pC = 18;
+          else if (spread <= -10) out.pC = 15;
+          else if (spread <=   0) out.pC = 12;
+          else if (spread <=   5) out.pC = 8;
+          else if (spread <=  10) out.pC = 5;
+          else                    out.pC = 2;
+
+          if      (spread <= -15) out.pCExp = "Significant discount to comp median — strong pricing edge";
+          else if (spread <=  -5) out.pCExp = "Below median — favorable entry";
+          else if (spread <=   5) out.pCExp = "At market — no edge from price alone";
+          else                    out.pCExp = "Above median — paying premium, edge must come elsewhere";
+        } else {
+          out.pC = 10;
+          out.pCExp = "Awaiting asking and comp median to assess pricing edge";
+        }
+
+        // Pillar D — User fit (max 10)
+        if (haveSpread) {
+          if (profile === "Collector") {
+            out.pD = (spread <= 10) ? 8 : 5;
+          } else if (profile === "Flipper") {
+            if      (spread <= -15) out.pD = 9;
+            else if (spread <=  -5) out.pD = 6;
+            else                    out.pD = 3;
+          } else if (profile === "Investor") {
+            if (reprint === "Low" && spread <= 20) out.pD = 8;
+            else if ((reprint === "Medium" || reprint === "High") && spread <= -5) out.pD = 7;
+            else out.pD = 4;
+          } else {
+            out.pD = 5;
+          }
+        } else {
+          out.pD = 5; // no prices yet
+        }
+
+        if (profile === "Collector")      out.pDExp = "Aligns with long-term hold thesis";
+        else if (profile === "Flipper")   out.pDExp = "Margin viability is the key constraint";
+        else if (profile === "Investor")  out.pDExp = "Catalyst exposure justifies the entry";
+        else                              out.pDExp = "Profile not selected";
+
+        return out;
+      }
+
+      function applyPillarDefaults(asking, median, reprint, trend, nVal) {
+        const defaults = computePillarDefaults(asking, median, profile, reprint, trend, nVal);
+        for (const id of pillarFieldIds) {
+          if (overridden.has(id)) continue;
+          els[id].value = defaults[id];
+          els[id].classList.add("is-default");
+        }
+      }
+
       // ---------- Render ----------
       function render() {
         const asking = num(els.asking);
@@ -702,16 +811,22 @@
           els.opNoteDisplay.classList.add("empty");
         }
 
+        // Apply auto-suggested pillar defaults (skips fields the operator has overridden)
+        applyPillarDefaults(asking, median, reprint, els.trend.value, nVal);
+
         // Composite
         const a = num(els.pA) ?? 0;
         const b = num(els.pB) ?? 0;
         const c = num(els.pC) ?? 0;
         const d = num(els.pD) ?? 0;
         const total = a + b + c + d;
-        const anyEntered = [els.pA, els.pB, els.pC, els.pD].some(el => el.value !== "");
-        const compText = anyEntered ? `${total}/100` : "—/100";
+        const compText = `${total}/100`;
         els.composite.textContent = compText;
         els.compositeBig.textContent = compText;
+        // Dim the composite while every score is still a default
+        const anyScoreOverridden = pillarScoreIds.some((id) => overridden.has(id));
+        els.composite.classList.toggle("is-default", !anyScoreOverridden);
+        els.compositeBig.classList.toggle("is-default", !anyScoreOverridden);
 
         // Thresholds (75% / 110% of median, hidden when median empty)
         if (median && median > 0) {
@@ -758,7 +873,14 @@
         const el = els[id];
         if (!el) return;
         const evt = (el.tagName === "SELECT") ? "change" : "input";
-        el.addEventListener(evt, render);
+        el.addEventListener(evt, () => {
+          // User input on a pillar field promotes it to operator-owned
+          if (pillarFieldSet.has(id)) {
+            overridden.add(id);
+            el.classList.remove("is-default");
+          }
+          render();
+        });
       });
 
       // ---------- Profile pill behavior (the moat moment) ----------
@@ -793,6 +915,7 @@
         els.pills.forEach((b) => b.classList.toggle("active", b.dataset.profile === "Collector"));
         profile = "Collector";
         lastTier = null;
+        overridden.clear();
         render();
         els.cardName.focus();
       });
