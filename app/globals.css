@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-feature-settings: "ss01", "cv11";
+}
+
+@layer components {
+  .container-tight {
+    @apply mx-auto w-full max-w-6xl px-6 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply text-xs font-medium tracking-tightish text-navy-400;
+  }
+
+  .rule-line {
+    @apply border-t border-rule;
+  }
+
+  .input-base {
+    @apply w-full rounded-none border border-navy-200 bg-white px-3.5 py-3 text-sm text-navy placeholder:text-navy-400 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy;
+  }
+
+  .label-base {
+    @apply mb-1.5 block text-xs font-medium text-navy-500;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-none bg-navy px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-navy-600 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-segment {
+    @apply inline-flex items-center justify-center rounded-none border border-navy-200 bg-white px-4 py-2.5 text-sm font-medium text-navy-500 transition-colors hover:border-navy hover:text-navy;
+  }
+
+  .btn-segment-active {
+    @apply border-navy bg-navy text-white hover:bg-navy hover:text-white;
+  }
+}
