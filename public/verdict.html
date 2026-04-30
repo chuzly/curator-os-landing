@@ -535,15 +535,24 @@
     .edu-body { display: none; padding: 4px 16px 14px 16px; border-top: 1px solid rgba(255,255,255,0.06); }
     .edu.open .edu-body { display: block; }
 
+    /* Vertical-stacked pillar block: header row → definition → per-card reason */
     .pillar-row {
-      display: grid; grid-template-columns: 200px 70px 1fr;
-      align-items: center; gap: 12px; padding: 7px 0;
+      display: block;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
-    .pillar-label { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; }
+    .pillar-row:last-of-type { border-bottom: 0; }
+    .pillar-header {
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 12px;
+    }
+    .pillar-label { font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; }
     .pillar-label small {
-      display: block; font-size: 9px; letter-spacing: 0.18em;
-      text-transform: uppercase; color: rgba(255,255,255,0.45);
-      margin-top: 2px; font-weight: 500;
+      display: block;
+      font-size: 14px; letter-spacing: 0;
+      text-transform: none;
+      color: #fff; font-weight: 600;
+      margin-top: 3px;
     }
     .pillar-score-cell { display: inline-flex; align-items: baseline; gap: 4px; }
     .pillar-score-input {
@@ -559,17 +568,31 @@
       font-family: ui-monospace, monospace;
       font-size: 11px; color: rgba(255,255,255,0.50);
     }
-    .pillar-reason {
-      width: 100%; background: transparent; border: 0;
-      border-bottom: 1px dashed rgba(255,255,255,0.10);
-      color: rgba(255,255,255,0.85);
-      font-size: 11px; font-family: 'Inter', sans-serif;
-      padding: 3px 0; outline: none;
+    /* Static plain-language definition under each pillar header */
+    .pillar-def {
+      color: rgba(93,202,165,0.65);
+      font-size: 12px;
+      font-style: italic;
+      line-height: 1.45;
+      margin: 4px 0 8px;
+      letter-spacing: 0.01em;
     }
-    .pillar-reason:focus { border-bottom-color: #5DCAA5; }
-    .pillar-reason::placeholder { color: rgba(255,255,255,0.25); }
+    /* Per-card reason: amber-bordered subtle box, italic body */
+    .pillar-reason {
+      width: 100%;
+      background: rgba(255,255,255,0.025);
+      border: 0;
+      border-left: 2px solid #d97706;
+      color: rgba(255,255,255,0.88);
+      font-size: 12px; font-style: italic; line-height: 1.45;
+      font-family: 'Inter', sans-serif;
+      padding: 6px 10px; outline: none;
+      transition: background 120ms;
+    }
+    .pillar-reason:focus { background: rgba(255,255,255,0.05); }
+    .pillar-reason::placeholder { color: rgba(255,255,255,0.30); font-style: italic; }
     .pillar-score-input.is-default { color: rgba(255,255,255,0.50); }
-    .pillar-reason.is-default { color: rgba(255,255,255,0.50); }
+    .pillar-reason.is-default { color: rgba(255,255,255,0.55); }
     .composite.is-default { color: rgba(255,255,255,0.45); }
 
     .composite-row {
@@ -997,36 +1020,48 @@
           </button>
           <div class="edu-body">
             <div class="pillar-row">
-              <div class="pillar-label">Pillar A<small>Card fundamentals</small></div>
-              <div class="pillar-score-cell">
-                <input id="pA" type="number" inputmode="numeric" min="0" max="40" placeholder="0" class="pillar-score-input" />
-                <span class="pillar-out">/ 40</span>
+              <div class="pillar-header">
+                <div class="pillar-label">Pillar A<small>Is the card good?</small></div>
+                <div class="pillar-score-cell">
+                  <input id="pA" type="number" inputmode="numeric" min="0" max="40" placeholder="0" class="pillar-score-input" />
+                  <span class="pillar-out">/ 40</span>
+                </div>
               </div>
-              <input id="pAExp" type="text" autocomplete="off" placeholder="Print run, format relevance, artist edge" class="pillar-reason" />
+              <div class="pillar-def">Will the company print more and flood the market? Are people still wanting it?</div>
+              <input id="pAExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="pillar-row">
-              <div class="pillar-label">Pillar B<small>Market dynamics</small></div>
-              <div class="pillar-score-cell">
-                <input id="pB" type="number" inputmode="numeric" min="0" max="30" placeholder="0" class="pillar-score-input" />
-                <span class="pillar-out">/ 30</span>
+              <div class="pillar-header">
+                <div class="pillar-label">Pillar B<small>Is there a real market?</small></div>
+                <div class="pillar-score-cell">
+                  <input id="pB" type="number" inputmode="numeric" min="0" max="30" placeholder="0" class="pillar-score-input" />
+                  <span class="pillar-out">/ 30</span>
+                </div>
               </div>
-              <input id="pBExp" type="text" autocomplete="off" placeholder="Velocity, depth, trend direction" class="pillar-reason" />
+              <div class="pillar-def">Are people actively buying and selling? Where is the price heading?</div>
+              <input id="pBExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="pillar-row">
-              <div class="pillar-label">Pillar C<small>Pricing edge</small></div>
-              <div class="pillar-score-cell">
-                <input id="pC" type="number" inputmode="numeric" min="0" max="20" placeholder="0" class="pillar-score-input" />
-                <span class="pillar-out">/ 20</span>
+              <div class="pillar-header">
+                <div class="pillar-label">Pillar C<small>Is the price fair?</small></div>
+                <div class="pillar-score-cell">
+                  <input id="pC" type="number" inputmode="numeric" min="0" max="20" placeholder="0" class="pillar-score-input" />
+                  <span class="pillar-out">/ 20</span>
+                </div>
               </div>
-              <input id="pCExp" type="text" autocomplete="off" placeholder="Spread vs comp median, room to negotiate" class="pillar-reason" />
+              <div class="pillar-def">How does the asking price compare to what people are actually paying?</div>
+              <input id="pCExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="pillar-row">
-              <div class="pillar-label">Pillar D<small>User fit</small></div>
-              <div class="pillar-score-cell">
-                <input id="pD" type="number" inputmode="numeric" min="0" max="10" placeholder="0" class="pillar-score-input" />
-                <span class="pillar-out">/ 10</span>
+              <div class="pillar-header">
+                <div class="pillar-label">Pillar D<small>Right card for YOU?</small></div>
+                <div class="pillar-score-cell">
+                  <input id="pD" type="number" inputmode="numeric" min="0" max="10" placeholder="0" class="pillar-score-input" />
+                  <span class="pillar-out">/ 10</span>
+                </div>
               </div>
-              <input id="pDExp" type="text" autocomplete="off" placeholder="Aligns with stated horizon and capital" class="pillar-reason" />
+              <div class="pillar-def">Buying to keep it, flip it fast, or hold for years — answer changes.</div>
+              <input id="pDExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="composite-row">
               <span class="metric-label" style="color:rgba(255,255,255,0.55);">Composite</span>
@@ -1483,82 +1518,82 @@
         const reprint = state.comps.reprintRisk || "Low";
         const profile = state.profile;
 
-        // ---- Pillar A — Card fundamentals (reprint × trend) ----
+        // ---- Pillar A — Is the card good? (reprint × trend) ----
         let A;
         if (reprint === "High") {
-          A = "Print run risk dampens long-term thesis — discount required to compensate";
+          A = "High reprint risk — Pokémon may make more, hurting price long-term.";
         } else if (reprint === "Low") {
-          if (trend === "Rising")       A = "Strong fundamentals — Reprint Low + Trend Rising support long-term thesis";
-          else if (trend === "Falling") A = "Quality card but cooling — wait for stabilization";
-          else                          A = "Solid card, low reprint risk supports patient hold";
+          if (trend === "Rising")       A = "Low reprint risk and price is climbing — strong card to keep.";
+          else if (trend === "Falling") A = "Low reprint risk but price cooling — wait it out.";
+          else                          A = "Low reprint risk, holding steady — solid long-term card.";
         } else { // Medium
-          if (trend === "Rising")       A = "Watching reprint exposure but momentum is real";
-          else if (trend === "Falling") A = "Reprint risk + cooling momentum = caution";
-          else                          A = "Moderate reprint risk, monitor for set rotations";
+          if (trend === "Rising")       A = "Some reprint risk, but price is rising — momentum is real.";
+          else if (trend === "Falling") A = "Some reprint risk plus cooling price — careful here.";
+          else                          A = "Some reprint risk to watch as set rotations happen.";
         }
 
-        // ---- Pillar B — Market dynamics (n × trend) ----
+        // ---- Pillar B — Is there a real market? (n × trend) ----
         let B;
         if (nVal === null || nVal === undefined || nVal <= 0) {
-          B = "Comp depth unknown — verify before final commitment";
+          B = "Not enough sales data yet — verdict is rough until more sell.";
         } else if (nVal >= 10) {
-          if (trend === "Rising")       B = `Active market with deep comp support (n=${nVal}) and rising trend`;
-          else if (trend === "Falling") B = `Deep comp data (n=${nVal}) but cooling — let it stabilize`;
-          else                          B = `Stable market with deep comp support (n=${nVal})`;
+          if (trend === "Rising")       B = `Lots of recent sales (${nVal}) and price is rising — strong demand.`;
+          else if (trend === "Falling") B = `Lots of recent sales (${nVal}) but price is dropping — let it settle.`;
+          else                          B = `Lots of recent sales (${nVal}) at steady prices — healthy market.`;
         } else if (nVal >= 4) {
-          if (trend === "Rising")       B = `Reasonable market depth (n=${nVal}), rising trend supports thesis`;
-          else if (trend === "Falling") B = `Reasonable market depth (n=${nVal}), falling trend — caution`;
-          else                          B = `Reasonable market depth (n=${nVal}), stable conditions`;
+          if (trend === "Rising")       B = `Some recent sales (${nVal}) and price is climbing — decent demand.`;
+          else if (trend === "Falling") B = `Some recent sales (${nVal}) but price is dropping — be careful.`;
+          else                          B = `Some recent sales (${nVal}) at steady prices — okay liquidity.`;
         } else { // 1..3
-          if (trend === "Rising")       B = `Thin comp data (n=${nVal}) but rising trend signals momentum — verdict directional`;
-          else if (trend === "Falling") B = `Thin comp data (n=${nVal}) and falling trend — high uncertainty`;
-          else                          B = `Thin comp data (n=${nVal}) — verdict is directional, not precise`;
+          if (trend === "Rising")       B = `Few recent sales (${nVal}) but price rising — read with caution.`;
+          else if (trend === "Falling") B = `Few recent sales (${nVal}) and price dropping — high uncertainty.`;
+          else                          B = `Few recent sales (${nVal}) — verdict is rough, not exact.`;
         }
 
-        // ---- Pillar C — Pricing edge (spread bands, templated %) ----
+        // ---- Pillar C — Is the price fair? (asking vs typical-price bands) ----
         let C;
         if (asking === null || asking === undefined || median === null || median === undefined) {
-          C = "Awaiting price data — fill in to evaluate edge";
+          C = "Need both asking price and typical price to compare.";
         } else if (median <= 0) {
-          C = "Median data invalid — cannot compute spread";
+          C = "Typical price data missing — can't compare yet.";
         } else {
           const spreadRaw = ((asking - median) / median) * 100;
           const spreadAbs = Math.abs(spreadRaw).toFixed(1);
-          if      (spreadRaw <= -20) C = `Asking ${spreadAbs}% below median — significant pricing edge`;
-          else if (spreadRaw <= -10) C = `Asking ${spreadAbs}% below median — favorable entry`;
-          else if (spreadRaw <=  -5) C = `Slightly below median (${spreadAbs}%) — modest edge`;
-          else if (spreadRaw <   5)  C = "At market (within ±5%) — no edge from price alone";
-          else if (spreadRaw <  10)  C = `Asking ${spreadAbs}% above median — minor premium, defensible if catalysts strong`;
-          else                       C = `Asking ${spreadAbs}% above median — paying premium, edge must come from elsewhere`;
+          if      (spreadRaw <= -20) C = `Asking is ${spreadAbs}% below typical — big bargain.`;
+          else if (spreadRaw <= -10) C = `Asking is ${spreadAbs}% below typical — good price.`;
+          else if (spreadRaw <=  -5) C = `Asking is ${spreadAbs}% below typical — slight discount.`;
+          else if (spreadRaw <   5)  C = "Roughly at typical price — no real bargain, no real markup.";
+          else if (spreadRaw <  10)  C = `Asking is ${spreadAbs}% above typical — small premium, okay if card is worth it.`;
+          else                       C = `Asking is ${spreadAbs}% above typical — overpaying unless other factors justify it.`;
         }
 
-        // ---- Pillar D — User fit (profile × spread × reprint) ----
+        // ---- Pillar D — Right card for YOU? (profile × asking-vs-typical × reprint) ----
         let D;
         const haveSpreadD = (asking !== null && asking !== undefined && median !== null && median !== undefined && median > 0);
         if (!haveSpreadD) {
-          D = "Awaiting price data — pillar inactive";
+          D = "Need price info to know if this matches your goal.";
         } else {
           const spreadD = ((asking - median) / median) * 100;
           if (profile === "Collector") {
             D = (spreadD <= 10)
-              ? "Aligns with Collector long-term hold thesis — within tolerance"
-              : "Spread exceeds Collector tolerance (+10% ceiling) — wait for pullback";
+              ? "Good fit if you're a Collector — fair price for a card to keep."
+              : "Too pricey for a Collector right now — wait for it to come down.";
           } else if (profile === "Flipper") {
-            if      (spreadD <= -15) D = "Strong flip margin — meets Flipper threshold (-15% or better)";
-            else if (spreadD <=  -5) D = "Flippable margin but tight — verify exit liquidity";
-            else                     D = "No flip margin — Flipper thesis fails at this price";
+            if      (spreadD <= -15) D = "Strong flip — buying well below typical, room to resell.";
+            else if (spreadD <=  -5) D = "Tight flip margin — works only if you can sell fast.";
+            else                     D = "No flip room — you'll lose money trying to resell at typical price.";
           } else if (profile === "Investor") {
             if (reprint === "Low") {
               D = (spreadD <= 20)
-                ? "Investor thesis viable — low reprint + spread within tolerance"
-                : "Premium too steep even for low-reprint Investor case";
+                ? "Good long-term hold — low reprint risk, reasonable price."
+                : "Paying too much even for long-term — wait.";
             } else { // Medium / High
               D = (spreadD <= -5)
-                ? "Risk-off Investor entry — discount compensates for reprint exposure"
-                : "Investor thesis fragile — reprint exposure not priced in";
+                ? "Risky long-term, but the discount helps make up for it."
+                : "Risky long-term and price isn't compensating — pass.";
             }
           } else {
-            D = "Profile not selected";
+            D = "Need to pick Collector / Flipper / Investor first.";
           }
         }
 
