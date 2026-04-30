@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Curator OS — Verdict Card</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              DEFAULT: "#1F2A44",
+              50: "#F4F5F8",
+              100: "#E5E8EF",
+              200: "#C2C9D8",
+              300: "#9DA7BE",
+              400: "#5C6A89",
+              500: "#1F2A44",
+              600: "#1A2339",
+              700: "#141B2D",
+            },
+            accent: { DEFAULT: "#C44536", hover: "#A8392B" },
+            surface: "#F5F5F0",
+            rule: "#D9D9D2",
+            ok: "#2F7D4F",
+            warn: "#B8862C",
+            danger: "#C44536",
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+          },
+          letterSpacing: { tightish: "-0.01em" },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ---- Offline-safe baseline (so the page is still usable if Tailwind CDN fails) ---- */
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      color: #1F2A44;
+      background: #ffffff;
+      margin: 0;
+    }
+    input, select, textarea, button { font-family: inherit; }
+
+    /* Form controls — flat, terminal-ish */
+    .field {
+      width: 100%;
+      border: 1px solid #C2C9D8;
+      background: #ffffff;
+      color: #1F2A44;
+      font-size: 13px;
+      line-height: 1.3;
+      padding: 9px 11px;
+      border-radius: 0;
+      outline: none;
+      transition: border-color 120ms ease;
+    }
+    .field:focus { border-color: #1F2A44; box-shadow: inset 0 0 0 1px #1F2A44; }
+    select.field { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, #5C6A89 50%), linear-gradient(135deg, #5C6A89 50%, transparent 50%); background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 26px; }
+    textarea.field { resize: none; min-height: 64px; line-height: 1.45; }
+
+    .field-label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #5C6A89;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 0; border: 1px solid #1F2A44;
+      padding: 9px 16px; font-size: 12px; font-weight: 500;
+      letter-spacing: 0.04em; cursor: pointer;
+      transition: background-color 120ms ease, color 120ms ease;
+    }
+    .btn-primary { background: #1F2A44; color: #fff; }
+    .btn-primary:hover { background: #1A2339; }
+    .btn-ghost { background: #fff; color: #1F2A44; }
+    .btn-ghost:hover { background: #F5F5F0; }
+
+    .eyebrow {
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #5C6A89; font-weight: 500;
+    }
+
+    /* Verdict card */
+    .v-card {
+      position: relative;
+      border: 1px solid #D9D9D2;
+      background: #ffffff;
+    }
+    .v-card.flash::after {
+      content: "";
+      position: absolute; inset: -1px;
+      border: 1px solid #1F2A44;
+      pointer-events: none;
+      animation: flash 600ms ease-out;
+    }
+    @keyframes flash {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      border: 1px solid currentColor;
+      padding: 3px 8px;
+      font-size: 10px; letter-spacing: 0.18em;
+      text-transform: uppercase; font-weight: 600;
+      font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace;
+    }
+    .badge-low    { color: #2F7D4F; }
+    .badge-mod    { color: #B8862C; }
+    .badge-high   { color: #C44536; }
+    .badge-vhigh  { color: #C44536; background: #C44536; color: #fff; border-color: #C44536; }
+
+    .verdict-line {
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .v-buy      { color: #2F7D4F; }
+    .v-pass     { color: #C44536; }
+    .v-neutral  { color: #1F2A44; }
+
+    .verdict-strip {
+      display: inline-block;
+      padding: 4px 10px;
+      font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+      font-weight: 600;
+      border: 1px solid currentColor;
+      margin-bottom: 14px;
+    }
+    .strip-buy { color: #2F7D4F; }
+    .strip-pass { color: #fff; background: #C44536; border-color: #C44536; }
+    .strip-neutral { color: #fff; background: #1F2A44; border-color: #1F2A44; }
+
+    .data-cell-label {
+      font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: #5C6A89; font-weight: 500;
+    }
+    .data-cell-value {
+      margin-top: 4px;
+      font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace;
+      font-size: 14px; color: #1F2A44;
+    }
+
+    .mono { font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace; }
+
+    /* Layout safety on iPad landscape */
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr !important; }
+    }
+
+    /* ----------- PRINT ----------- */
+    @media print {
+      @page { size: auto; margin: 12mm; }
+      body { background: #ffffff !important; }
+      .no-print { display: none !important; }
+      .layout { display: block !important; }
+      .v-card { border: 1px solid #1F2A44 !important; box-shadow: none !important; }
+      .v-card.flash::after { display: none !important; }
+      .right-col { padding: 0 !important; }
+      .topbar { display: none !important; }
+      .verdict-strip.strip-pass { background: #C44536 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .verdict-strip.strip-neutral { background: #1F2A44 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .badge-vhigh { background: #C44536 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+
+<body class="bg-white text-navy">
+
+  <!-- Top bar -->
+  <header class="topbar border-b border-rule bg-white">
+    <div class="flex items-center justify-between px-6 py-3">
+      <div class="flex items-baseline gap-3">
+        <span class="font-semibold tracking-tightish text-navy text-[15px]">Curator OS</span>
+        <span class="text-navy-300">/</span>
+        <span class="eyebrow" style="letter-spacing:0.18em;">Verdict Card</span>
+      </div>
+      <span class="mono text-[10px] uppercase tracking-[0.18em] text-navy-400 border border-rule px-2 py-1">v0.1 demo</span>
+    </div>
+  </header>
+
+  <!-- Two-column layout -->
+  <main class="layout grid" style="grid-template-columns: 40% 60%; min-height: calc(100vh - 49px);">
+
+    <!-- LEFT: input form -->
+    <section class="no-print border-r border-rule bg-surface">
+      <div class="p-6">
+        <p class="eyebrow mb-4">Operator input</p>
+
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="field-label" for="cardName">Card name</label>
+            <input id="cardName" type="text" class="field" placeholder="Charizard ex SAR" autocomplete="off" />
+          </div>
+
+          <div>
+            <label class="field-label" for="setNumber">Set + number</label>
+            <input id="setNumber" type="text" class="field" placeholder="Obsidian Flames 215/197" autocomplete="off" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label" for="condition">Condition</label>
+              <select id="condition" class="field">
+                <option value="Near Mint">Near Mint</option>
+                <option value="Lightly Played">Lightly Played</option>
+                <option value="Moderately Played">Moderately Played</option>
+                <option value="Heavily Played">Heavily Played</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="field-label" for="asking">Asking price (RM)</label>
+              <input id="asking" type="number" class="field" placeholder="850" inputmode="decimal" min="0" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label" for="compLow">Comp range — low (RM)</label>
+              <input id="compLow" type="number" class="field" placeholder="700" inputmode="decimal" min="0" />
+            </div>
+            <div>
+              <label class="field-label" for="compHigh">Comp range — high (RM)</label>
+              <input id="compHigh" type="number" class="field" placeholder="820" inputmode="decimal" min="0" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label" for="reprintRisk">Reprint risk</label>
+              <select id="reprintRisk" class="field">
+                <option value="Low">Low</option>
+                <option value="Moderate">Moderate</option>
+                <option value="High">High</option>
+                <option value="Very High">Very High</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="trend">Market trend</label>
+              <select id="trend" class="field">
+                <option value="Strong Uptrend">Strong Uptrend</option>
+                <option value="Mild Uptrend">Mild Uptrend</option>
+                <option value="Sideways" selected>Sideways</option>
+                <option value="Mild Downtrend">Mild Downtrend</option>
+                <option value="Sharp Downtrend">Sharp Downtrend</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label" for="profile">User profile</label>
+            <select id="profile" class="field">
+              <option value="Cash-rich flipper">Cash-rich flipper</option>
+              <option value="Patient collector">Patient collector</option>
+              <option value="Long-term thesis">Long-term thesis</option>
+              <option value="Newcomer">Newcomer</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="field-label" for="verdict">Verdict</label>
+            <select id="verdict" class="field">
+              <option value="Buy at this price">Buy at this price</option>
+              <option value="Buy if drops to comp low">Buy if drops to comp low</option>
+              <option value="Pass — overpriced">Pass — overpriced</option>
+              <option value="Pass — reprint risk">Pass — reprint risk</option>
+              <option value="Pass — wrong fit for profile">Pass — wrong fit for profile</option>
+              <option value="Negotiate down">Negotiate down</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="field-label" for="note">Operator note</label>
+            <textarea id="note" class="field" rows="3" placeholder="Wait for sub-RM 750. Sold comps cluster 720–780 last 30 days."></textarea>
+          </div>
+
+          <div class="flex items-center gap-3 pt-2">
+            <button id="printBtn" type="button" class="btn btn-primary">Print verdict</button>
+            <button id="resetBtn" type="button" class="btn btn-ghost">Reset</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: verdict card -->
+    <section class="right-col p-8 bg-white flex items-stretch">
+      <article id="vCard" class="v-card w-full p-8 flex flex-col">
+
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-6">
+          <div class="min-w-0">
+            <p class="eyebrow mb-2">Subject card</p>
+            <h1 id="vName" class="text-navy font-semibold tracking-tightish leading-tight" style="font-size: 30px;">
+              —
+            </h1>
+            <p id="vSet" class="mt-2 mono text-navy-400 text-[11px] uppercase tracking-[0.18em]">
+              —
+            </p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="eyebrow mb-2">Asking</p>
+            <p id="vAsking" class="mono text-navy" style="font-size: 22px; font-weight: 600;">RM —</p>
+          </div>
+        </div>
+
+        <div class="my-6 h-px bg-rule"></div>
+
+        <!-- Data grid -->
+        <div class="grid grid-cols-2 gap-x-8 gap-y-5">
+          <div>
+            <p class="data-cell-label">Comp range</p>
+            <p id="vComp" class="data-cell-value">RM — – RM —</p>
+          </div>
+          <div>
+            <p class="data-cell-label">Reprint risk</p>
+            <p class="mt-1"><span id="vReprint" class="badge badge-low">Low</span></p>
+          </div>
+          <div>
+            <p class="data-cell-label">Condition</p>
+            <p id="vCondition" class="data-cell-value">Near Mint</p>
+          </div>
+          <div>
+            <p class="data-cell-label">Market trend</p>
+            <p id="vTrend" class="data-cell-value">Sideways</p>
+          </div>
+          <div>
+            <p class="data-cell-label">Profile context</p>
+            <p id="vProfile" class="data-cell-value">Cash-rich flipper</p>
+          </div>
+          <div>
+            <p class="data-cell-label">Spread vs. comp mid</p>
+            <p id="vSpread" class="data-cell-value">—</p>
+          </div>
+        </div>
+
+        <div class="my-6 h-px bg-rule"></div>
+
+        <!-- Verdict -->
+        <div>
+          <p class="eyebrow mb-3">Verdict</p>
+          <div>
+            <span id="vStrip" class="verdict-strip strip-neutral">Pending</span>
+          </div>
+          <p id="vVerdict" class="verdict-line v-neutral mt-1">Awaiting input.</p>
+        </div>
+
+        <div class="my-6 h-px bg-rule"></div>
+
+        <!-- Note -->
+        <div class="flex-1">
+          <p class="eyebrow mb-3">Operator note</p>
+          <p id="vNote" class="text-navy-500 text-[14px] leading-relaxed">
+            —
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 pt-5 border-t border-rule">
+          <div class="flex items-end justify-between gap-4 flex-wrap">
+            <p class="mono text-[10px] uppercase tracking-[0.18em] text-navy-400">
+              Curator OS · <span id="vDate"></span>
+            </p>
+            <p class="text-[10px] text-navy-400 leading-snug max-w-[60%] text-right">
+              Verdict reflects current market data and your stated thesis. Physical inspection remains your responsibility.
+            </p>
+          </div>
+        </div>
+
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+
+      const els = {
+        cardName: $("cardName"),
+        setNumber: $("setNumber"),
+        condition: $("condition"),
+        asking: $("asking"),
+        compLow: $("compLow"),
+        compHigh: $("compHigh"),
+        reprintRisk: $("reprintRisk"),
+        trend: $("trend"),
+        profile: $("profile"),
+        verdict: $("verdict"),
+        note: $("note"),
+
+        vCard: $("vCard"),
+        vName: $("vName"),
+        vSet: $("vSet"),
+        vAsking: $("vAsking"),
+        vComp: $("vComp"),
+        vCondition: $("vCondition"),
+        vTrend: $("vTrend"),
+        vProfile: $("vProfile"),
+        vReprint: $("vReprint"),
+        vSpread: $("vSpread"),
+        vStrip: $("vStrip"),
+        vVerdict: $("vVerdict"),
+        vNote: $("vNote"),
+        vDate: $("vDate"),
+
+        printBtn: $("printBtn"),
+        resetBtn: $("resetBtn"),
+      };
+
+      // Date in footer
+      const now = new Date();
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      els.vDate.textContent =
+        String(now.getDate()).padStart(2, "0") + " " +
+        months[now.getMonth()] + " " + now.getFullYear();
+
+      function fmtRM(n) {
+        if (n === null || n === undefined || n === "" || isNaN(n)) return null;
+        const v = Number(n);
+        return "RM " + v.toLocaleString("en-MY", { maximumFractionDigits: 0 });
+      }
+
+      function setReprintBadge(level) {
+        els.vReprint.textContent = level;
+        els.vReprint.classList.remove("badge-low","badge-mod","badge-high","badge-vhigh");
+        switch (level) {
+          case "Low":       els.vReprint.classList.add("badge-low"); break;
+          case "Moderate":  els.vReprint.classList.add("badge-mod"); break;
+          case "High":      els.vReprint.classList.add("badge-high"); break;
+          case "Very High": els.vReprint.classList.add("badge-vhigh"); break;
+        }
+      }
+
+      function classifyVerdict(v) {
+        if (!v) return "neutral";
+        if (v.startsWith("Buy")) return "buy";
+        if (v.startsWith("Pass")) return "pass";
+        return "neutral"; // Negotiate or anything else
+      }
+
+      let lastVerdictKind = null;
+
+      function render() {
+        // Card name
+        const name = els.cardName.value.trim();
+        els.vName.textContent = name || "—";
+
+        // Set + number
+        const set = els.setNumber.value.trim();
+        els.vSet.textContent = set || "—";
+
+        // Asking
+        const asking = els.asking.value;
+        const askingFmt = fmtRM(asking);
+        els.vAsking.textContent = askingFmt || "RM —";
+
+        // Comp range
+        const lo = els.compLow.value;
+        const hi = els.compHigh.value;
+        const loFmt = fmtRM(lo);
+        const hiFmt = fmtRM(hi);
+        if (loFmt && hiFmt) {
+          els.vComp.textContent = loFmt + " – " + hiFmt;
+        } else if (loFmt) {
+          els.vComp.textContent = loFmt + " – —";
+        } else if (hiFmt) {
+          els.vComp.textContent = "— – " + hiFmt;
+        } else {
+          els.vComp.textContent = "RM — – RM —";
+        }
+
+        // Spread vs comp mid
+        if (asking && lo && hi && Number(lo) > 0 && Number(hi) > 0) {
+          const mid = (Number(lo) + Number(hi)) / 2;
+          if (mid > 0) {
+            const pct = ((Number(asking) - mid) / mid) * 100;
+            const sign = pct > 0 ? "+" : "";
+            els.vSpread.textContent = sign + pct.toFixed(1) + "% vs RM " + Math.round(mid).toLocaleString("en-MY");
+          } else {
+            els.vSpread.textContent = "—";
+          }
+        } else {
+          els.vSpread.textContent = "—";
+        }
+
+        // Condition / trend / profile
+        els.vCondition.textContent = els.condition.value;
+        els.vTrend.textContent = els.trend.value;
+        els.vProfile.textContent = els.profile.value;
+
+        // Reprint badge
+        setReprintBadge(els.reprintRisk.value);
+
+        // Verdict
+        const verdictText = els.verdict.value;
+        const kind = classifyVerdict(verdictText);
+        els.vVerdict.classList.remove("v-buy","v-pass","v-neutral");
+        els.vStrip.classList.remove("strip-buy","strip-pass","strip-neutral");
+
+        if (kind === "buy") {
+          els.vVerdict.classList.add("v-buy");
+          els.vStrip.classList.add("strip-buy");
+          els.vStrip.textContent = "BUY";
+        } else if (kind === "pass") {
+          els.vVerdict.classList.add("v-pass");
+          els.vStrip.classList.add("strip-pass");
+          els.vStrip.textContent = "PASS";
+        } else {
+          els.vVerdict.classList.add("v-neutral");
+          els.vStrip.classList.add("strip-neutral");
+          els.vStrip.textContent = verdictText.toLowerCase().includes("negotiate") ? "NEGOTIATE" : "REVIEW";
+        }
+        els.vVerdict.textContent = verdictText;
+
+        // Note
+        const note = els.note.value.trim();
+        els.vNote.textContent = note || "—";
+
+        // Subtle border-flash when the verdict KIND changes
+        if (lastVerdictKind !== null && lastVerdictKind !== kind) {
+          els.vCard.classList.remove("flash");
+          // force reflow so the animation restarts
+          void els.vCard.offsetWidth;
+          els.vCard.classList.add("flash");
+        }
+        lastVerdictKind = kind;
+      }
+
+      // Wire up live updates
+      ["cardName","setNumber","condition","asking","compLow","compHigh",
+       "reprintRisk","trend","profile","verdict","note"].forEach((id) => {
+        const el = els[id];
+        const evt = (el.tagName === "SELECT") ? "change" : "input";
+        el.addEventListener(evt, render);
+      });
+
+      els.printBtn.addEventListener("click", () => window.print());
+      els.resetBtn.addEventListener("click", () => {
+        els.cardName.value = "";
+        els.setNumber.value = "";
+        els.condition.value = "Near Mint";
+        els.asking.value = "";
+        els.compLow.value = "";
+        els.compHigh.value = "";
+        els.reprintRisk.value = "Low";
+        els.trend.value = "Sideways";
+        els.profile.value = "Cash-rich flipper";
+        els.verdict.value = "Buy at this price";
+        els.note.value = "";
+        lastVerdictKind = null;
+        render();
+        els.cardName.focus();
+      });
+
+      // Initial render
+      render();
+    })();
+  </script>
+</body>
+</html>

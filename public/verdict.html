@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -15,562 +15,784 @@
       theme: {
         extend: {
           colors: {
-            navy: {
-              DEFAULT: "#1F2A44",
-              50: "#F4F5F8",
-              100: "#E5E8EF",
-              200: "#C2C9D8",
-              300: "#9DA7BE",
-              400: "#5C6A89",
-              500: "#1F2A44",
-              600: "#1A2339",
-              700: "#141B2D",
-            },
-            accent: { DEFAULT: "#C44536", hover: "#A8392B" },
-            surface: "#F5F5F0",
-            rule: "#D9D9D2",
-            ok: "#2F7D4F",
-            warn: "#B8862C",
-            danger: "#C44536",
+            bg:        "#0a1628",
+            panel:     "#1a2333",
+            cardSurface: "#0f1e34",
+            steal:     "#5DCAA5",
+            buy:       "#5DCAA5",
+            negotiate: "#d97706",
+            walk:      "#F09595",
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
           },
-          letterSpacing: { tightish: "-0.01em" },
         },
       },
     };
   </script>
 
   <style>
-    /* ---- Offline-safe baseline (so the page is still usable if Tailwind CDN fails) ---- */
-    html, body { height: 100%; }
+    /* ---------- Baseline ---------- */
+    html, body { background: #0a1628; color: #ffffff; height: 100%; margin: 0; }
     body {
       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-      color: #1F2A44;
-      background: #ffffff;
-      margin: 0;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      font-feature-settings: "ss01";
     }
-    input, select, textarea, button { font-family: inherit; }
+    *, *::before, *::after { box-sizing: border-box; }
 
-    /* Form controls — flat, terminal-ish */
-    .field {
-      width: 100%;
-      border: 1px solid #C2C9D8;
-      background: #ffffff;
-      color: #1F2A44;
-      font-size: 13px;
-      line-height: 1.3;
-      padding: 9px 11px;
-      border-radius: 0;
-      outline: none;
+    /* ---------- Form inputs (left column) ---------- */
+    .input {
+      width: 100%; background: #0f1e34;
+      border: 1px solid rgba(255,255,255,0.10);
+      color: #ffffff; padding: 9px 11px;
+      font-size: 13px; line-height: 1.3;
+      border-radius: 0; outline: none;
+      font-family: inherit;
       transition: border-color 120ms ease;
     }
-    .field:focus { border-color: #1F2A44; box-shadow: inset 0 0 0 1px #1F2A44; }
-    select.field { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, #5C6A89 50%), linear-gradient(135deg, #5C6A89 50%, transparent 50%); background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 26px; }
-    textarea.field { resize: none; min-height: 64px; line-height: 1.45; }
+    .input:focus { border-color: #5DCAA5; }
+    .input::placeholder { color: rgba(255,255,255,0.30); }
 
-    .field-label {
+    select.input {
+      appearance: none; -webkit-appearance: none;
+      padding-right: 24px;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.50) 50%),
+        linear-gradient(135deg, rgba(255,255,255,0.50) 50%, transparent 50%);
+      background-position: calc(100% - 12px) 55%, calc(100% - 7px) 55%;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    select.input option { background: #0f1e34; color: #fff; }
+
+    textarea.input { resize: none; line-height: 1.5; min-height: 64px; }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    .form-label {
       display: block;
-      font-size: 10px;
-      letter-spacing: 0.16em;
+      font-size: 10px; letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: #5C6A89;
-      margin-bottom: 5px;
+      color: rgba(255,255,255,0.55);
       font-weight: 500;
+      margin-bottom: 5px;
     }
-
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 0; border: 1px solid #1F2A44;
-      padding: 9px 16px; font-size: 12px; font-weight: 500;
-      letter-spacing: 0.04em; cursor: pointer;
-      transition: background-color 120ms ease, color 120ms ease;
-    }
-    .btn-primary { background: #1F2A44; color: #fff; }
-    .btn-primary:hover { background: #1A2339; }
-    .btn-ghost { background: #fff; color: #1F2A44; }
-    .btn-ghost:hover { background: #F5F5F0; }
 
     .eyebrow {
-      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: #5C6A89; font-weight: 500;
+      font-size: 10px; letter-spacing: 0.22em;
+      text-transform: uppercase; font-weight: 600;
+      color: rgba(255,255,255,0.45);
     }
 
-    /* Verdict card */
-    .v-card {
-      position: relative;
-      border: 1px solid #D9D9D2;
-      background: #ffffff;
+    .btn-min {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.20);
+      padding: 7px 12px;
+      background: transparent;
+      cursor: pointer;
+      transition: color 120ms, border-color 120ms;
     }
-    .v-card.flash::after {
-      content: "";
-      position: absolute; inset: -1px;
-      border: 1px solid #1F2A44;
+    .btn-min:hover { color: #fff; border-color: rgba(255,255,255,0.50); }
+
+    /* ---------- Verdict banner ---------- */
+    .verdict-text {
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 0.95;
+      font-size: clamp(56px, 8.4vw, 96px);
+    }
+    .v-steal     { color: #5DCAA5; text-shadow: 0 0 38px rgba(93,202,165,0.55), 0 0 12px rgba(93,202,165,0.45); }
+    .v-buy       { color: #5DCAA5; }
+    .v-negotiate { color: #d97706; }
+    .v-walk      { color: #F09595; }
+    .v-pending   { color: rgba(255,255,255,0.25); }
+
+    .verdict-wrap.flash::after {
+      content: ""; position: absolute; inset: -10px;
+      border: 1px solid currentColor; opacity: 0.5;
       pointer-events: none;
-      animation: flash 600ms ease-out;
+      animation: vflash 700ms ease-out forwards;
     }
-    @keyframes flash {
-      0%   { opacity: 1; }
-      100% { opacity: 0; }
+    @keyframes vflash {
+      from { opacity: 0.5; transform: scale(1); }
+      to   { opacity: 0;   transform: scale(1.02); }
+    }
+
+    /* ---------- Profile pills ---------- */
+    .pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 18px;
+      font-size: 12px; letter-spacing: 0.22em;
+      text-transform: uppercase; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.22);
+      color: rgba(255,255,255,0.70);
+      background: transparent;
+      cursor: pointer;
+      transition: background-color 120ms, color 120ms, border-color 120ms;
+      border-radius: 0;
+      flex: 1;
+      min-width: 0;
+    }
+    .pill:hover { color: #fff; border-color: rgba(255,255,255,0.55); }
+    .pill.active { background: #ffffff; color: #0a1628; border-color: #ffffff; }
+
+    /* ---------- Metric cards ---------- */
+    .metric {
+      background: #0f1e34;
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 12px 16px;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      min-height: 90px;
+    }
+    .metric-label {
+      font-size: 10px; letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.50);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .metric-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 28px; font-weight: 600; color: #ffffff;
+      letter-spacing: -0.01em; line-height: 1.1;
+    }
+    .metric-sub {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; color: rgba(255,255,255,0.55);
+      margin-top: 4px;
     }
 
     .badge {
       display: inline-flex; align-items: center;
+      padding: 5px 12px;
+      font: 600 11px/1 ui-monospace, monospace;
+      letter-spacing: 0.18em; text-transform: uppercase;
       border: 1px solid currentColor;
-      padding: 3px 8px;
-      font-size: 10px; letter-spacing: 0.18em;
+    }
+    .b-steal     { color: #5DCAA5; }
+    .b-negotiate { color: #d97706; }
+    .b-walk      { color: #F09595; }
+
+    /* ---------- Operator note display ---------- */
+    .op-note-display {
+      background: #1a2333;
+      border-left: 4px solid #d97706;
+      padding: 12px 16px;
+      font-style: italic;
+      color: rgba(255,255,255,0.92);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .op-note-display.empty {
+      color: rgba(255,255,255,0.32);
+      font-style: italic;
+    }
+
+    /* ---------- Educator panel ---------- */
+    .edu {
+      background: #1a2333;
+      border-left: 4px solid #d97706;
+    }
+    .edu-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%;
+      padding: 10px 16px;
+      font-size: 11px; letter-spacing: 0.18em;
       text-transform: uppercase; font-weight: 600;
-      font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace;
+      color: rgba(255,255,255,0.75);
+      background: transparent;
+      border: 0;
+      text-align: left;
+      cursor: pointer; user-select: none;
+      font-family: inherit;
     }
-    .badge-low    { color: #2F7D4F; }
-    .badge-mod    { color: #B8862C; }
-    .badge-high   { color: #C44536; }
-    .badge-vhigh  { color: #C44536; background: #C44536; color: #fff; border-color: #C44536; }
-
-    .verdict-line {
-      font-size: 28px;
-      line-height: 1.15;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+    .edu-toggle:hover { color: #fff; }
+    .edu-body {
+      display: none;
+      padding: 4px 16px 14px 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
     }
-    .v-buy      { color: #2F7D4F; }
-    .v-pass     { color: #C44536; }
-    .v-neutral  { color: #1F2A44; }
+    .edu.open .edu-body { display: block; }
 
-    .verdict-strip {
-      display: inline-block;
-      padding: 4px 10px;
-      font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace;
-      font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-      font-weight: 600;
-      border: 1px solid currentColor;
-      margin-bottom: 14px;
+    .pillar-row {
+      display: grid;
+      grid-template-columns: 200px 70px 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 7px 0;
     }
-    .strip-buy { color: #2F7D4F; }
-    .strip-pass { color: #fff; background: #C44536; border-color: #C44536; }
-    .strip-neutral { color: #fff; background: #1F2A44; border-color: #1F2A44; }
-
-    .data-cell-label {
-      font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-      color: #5C6A89; font-weight: 500;
+    .pillar-label {
+      font-size: 12px; color: rgba(255,255,255,0.85);
+      font-weight: 500;
     }
-    .data-cell-value {
-      margin-top: 4px;
-      font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace;
-      font-size: 14px; color: #1F2A44;
+    .pillar-label small {
+      display: block;
+      font-size: 9px; letter-spacing: 0.18em;
+      text-transform: uppercase; color: rgba(255,255,255,0.45);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+    .pillar-score-cell {
+      display: inline-flex; align-items: baseline; gap: 4px;
+    }
+    .pillar-score-input {
+      width: 38px; text-align: right;
+      background: transparent; border: 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.20);
+      color: #ffffff;
+      font-size: 14px; font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 1px 0;
+      outline: none;
+      transition: border-color 120ms;
+    }
+    .pillar-score-input:focus { border-bottom-color: #5DCAA5; }
+    .pillar-score-input::placeholder { color: rgba(255,255,255,0.25); }
+    .pillar-out {
+      font-family: ui-monospace, monospace;
+      font-size: 11px; color: rgba(255,255,255,0.50);
+    }
+    .pillar-reason {
+      width: 100%;
+      background: transparent; border: 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.85);
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+      padding: 3px 0;
+      outline: none;
+      transition: border-color 120ms;
+    }
+    .pillar-reason:focus { border-bottom-color: #5DCAA5; }
+    .pillar-reason::placeholder { color: rgba(255,255,255,0.25); }
+
+    .composite-row {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      display: flex; align-items: baseline; justify-content: space-between;
     }
 
-    .mono { font-family: 'ui-monospace', SFMono-Regular, Menlo, monospace; }
+    /* ---------- Thresholds ---------- */
+    .thresholds {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px; letter-spacing: 0.10em;
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+    }
+    .thresholds .label { font-weight: 700; letter-spacing: 0.20em; }
 
-    /* Layout safety on iPad landscape */
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr !important; }
+    /* ---------- Footer ---------- */
+    .foot {
+      font-family: ui-monospace, monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.32);
+      text-transform: uppercase;
     }
 
-    /* ----------- PRINT ----------- */
+    /* ---------- 2-column layout ---------- */
+    .stage {
+      display: grid;
+      grid-template-columns: 38% 62%;
+      gap: 0;
+      height: 100vh;
+      max-height: 100vh;
+      width: 100%;
+    }
+    .form-col {
+      border-right: 1px solid rgba(255,255,255,0.08);
+      overflow-y: auto;
+      padding: 22px 22px 28px 22px;
+    }
+    .display-col {
+      padding: 22px 26px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* On a phone or narrow window, stack and allow scroll */
+    @media (max-width: 800px) {
+      .stage { grid-template-columns: 1fr; height: auto; max-height: none; }
+      .form-col { border-right: 0; border-bottom: 1px solid rgba(255,255,255,0.08); overflow: visible; }
+      .display-col { overflow: visible; }
+    }
+
+    /* ---------- Print ---------- */
     @media print {
-      @page { size: auto; margin: 12mm; }
-      body { background: #ffffff !important; }
+      @page { size: landscape; margin: 10mm; }
+      html, body {
+        background: #0a1628 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .stage { display: block; height: auto; max-height: none; }
+      .form-col { display: none !important; }
+      .display-col { padding: 0; overflow: visible; }
       .no-print { display: none !important; }
-      .layout { display: block !important; }
-      .v-card { border: 1px solid #1F2A44 !important; box-shadow: none !important; }
-      .v-card.flash::after { display: none !important; }
-      .right-col { padding: 0 !important; }
-      .topbar { display: none !important; }
-      .verdict-strip.strip-pass { background: #C44536 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .verdict-strip.strip-neutral { background: #1F2A44 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .badge-vhigh { background: #C44536 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .verdict-wrap.flash::after { display: none !important; }
+      .pill.active { background: #fff !important; color: #0a1628 !important; }
+      .verdict-banner-section { page-break-inside: avoid; break-inside: avoid; }
     }
   </style>
 </head>
 
-<body class="bg-white text-navy">
+<body>
+  <div class="stage">
 
-  <!-- Top bar -->
-  <header class="topbar border-b border-rule bg-white">
-    <div class="flex items-center justify-between px-6 py-3">
-      <div class="flex items-baseline gap-3">
-        <span class="font-semibold tracking-tightish text-navy text-[15px]">Curator OS</span>
-        <span class="text-navy-300">/</span>
-        <span class="eyebrow" style="letter-spacing:0.18em;">Verdict Card</span>
-      </div>
-      <span class="mono text-[10px] uppercase tracking-[0.18em] text-navy-400 border border-rule px-2 py-1">v0.1 demo</span>
-    </div>
-  </header>
-
-  <!-- Two-column layout -->
-  <main class="layout grid" style="grid-template-columns: 40% 60%; min-height: calc(100vh - 49px);">
-
-    <!-- LEFT: input form -->
-    <section class="no-print border-r border-rule bg-surface">
-      <div class="p-6">
-        <p class="eyebrow mb-4">Operator input</p>
-
-        <div class="grid grid-cols-1 gap-4">
-          <div>
-            <label class="field-label" for="cardName">Card name</label>
-            <input id="cardName" type="text" class="field" placeholder="Charizard ex SAR" autocomplete="off" />
-          </div>
-
-          <div>
-            <label class="field-label" for="setNumber">Set + number</label>
-            <input id="setNumber" type="text" class="field" placeholder="Obsidian Flames 215/197" autocomplete="off" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="field-label" for="condition">Condition</label>
-              <select id="condition" class="field">
-                <option value="Near Mint">Near Mint</option>
-                <option value="Lightly Played">Lightly Played</option>
-                <option value="Moderately Played">Moderately Played</option>
-                <option value="Heavily Played">Heavily Played</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="field-label" for="asking">Asking price (RM)</label>
-              <input id="asking" type="number" class="field" placeholder="850" inputmode="decimal" min="0" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="field-label" for="compLow">Comp range — low (RM)</label>
-              <input id="compLow" type="number" class="field" placeholder="700" inputmode="decimal" min="0" />
-            </div>
-            <div>
-              <label class="field-label" for="compHigh">Comp range — high (RM)</label>
-              <input id="compHigh" type="number" class="field" placeholder="820" inputmode="decimal" min="0" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="field-label" for="reprintRisk">Reprint risk</label>
-              <select id="reprintRisk" class="field">
-                <option value="Low">Low</option>
-                <option value="Moderate">Moderate</option>
-                <option value="High">High</option>
-                <option value="Very High">Very High</option>
-              </select>
-            </div>
-            <div>
-              <label class="field-label" for="trend">Market trend</label>
-              <select id="trend" class="field">
-                <option value="Strong Uptrend">Strong Uptrend</option>
-                <option value="Mild Uptrend">Mild Uptrend</option>
-                <option value="Sideways" selected>Sideways</option>
-                <option value="Mild Downtrend">Mild Downtrend</option>
-                <option value="Sharp Downtrend">Sharp Downtrend</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="field-label" for="profile">User profile</label>
-            <select id="profile" class="field">
-              <option value="Cash-rich flipper">Cash-rich flipper</option>
-              <option value="Patient collector">Patient collector</option>
-              <option value="Long-term thesis">Long-term thesis</option>
-              <option value="Newcomer">Newcomer</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="field-label" for="verdict">Verdict</label>
-            <select id="verdict" class="field">
-              <option value="Buy at this price">Buy at this price</option>
-              <option value="Buy if drops to comp low">Buy if drops to comp low</option>
-              <option value="Pass — overpriced">Pass — overpriced</option>
-              <option value="Pass — reprint risk">Pass — reprint risk</option>
-              <option value="Pass — wrong fit for profile">Pass — wrong fit for profile</option>
-              <option value="Negotiate down">Negotiate down</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="field-label" for="note">Operator note</label>
-            <textarea id="note" class="field" rows="3" placeholder="Wait for sub-RM 750. Sold comps cluster 720–780 last 30 days."></textarea>
-          </div>
-
-          <div class="flex items-center gap-3 pt-2">
-            <button id="printBtn" type="button" class="btn btn-primary">Print verdict</button>
-            <button id="resetBtn" type="button" class="btn btn-ghost">Reset</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- RIGHT: verdict card -->
-    <section class="right-col p-8 bg-white flex items-stretch">
-      <article id="vCard" class="v-card w-full p-8 flex flex-col">
-
-        <!-- Header -->
-        <div class="flex items-start justify-between gap-6">
-          <div class="min-w-0">
-            <p class="eyebrow mb-2">Subject card</p>
-            <h1 id="vName" class="text-navy font-semibold tracking-tightish leading-tight" style="font-size: 30px;">
-              —
-            </h1>
-            <p id="vSet" class="mt-2 mono text-navy-400 text-[11px] uppercase tracking-[0.18em]">
-              —
-            </p>
-          </div>
-          <div class="text-right shrink-0">
-            <p class="eyebrow mb-2">Asking</p>
-            <p id="vAsking" class="mono text-navy" style="font-size: 22px; font-weight: 600;">RM —</p>
-          </div>
-        </div>
-
-        <div class="my-6 h-px bg-rule"></div>
-
-        <!-- Data grid -->
-        <div class="grid grid-cols-2 gap-x-8 gap-y-5">
-          <div>
-            <p class="data-cell-label">Comp range</p>
-            <p id="vComp" class="data-cell-value">RM — – RM —</p>
-          </div>
-          <div>
-            <p class="data-cell-label">Reprint risk</p>
-            <p class="mt-1"><span id="vReprint" class="badge badge-low">Low</span></p>
-          </div>
-          <div>
-            <p class="data-cell-label">Condition</p>
-            <p id="vCondition" class="data-cell-value">Near Mint</p>
-          </div>
-          <div>
-            <p class="data-cell-label">Market trend</p>
-            <p id="vTrend" class="data-cell-value">Sideways</p>
-          </div>
-          <div>
-            <p class="data-cell-label">Profile context</p>
-            <p id="vProfile" class="data-cell-value">Cash-rich flipper</p>
-          </div>
-          <div>
-            <p class="data-cell-label">Spread vs. comp mid</p>
-            <p id="vSpread" class="data-cell-value">—</p>
-          </div>
-        </div>
-
-        <div class="my-6 h-px bg-rule"></div>
-
-        <!-- Verdict -->
+    <!-- ============== LEFT: FORM ============== -->
+    <section class="form-col">
+      <header class="flex items-baseline justify-between mb-5">
         <div>
-          <p class="eyebrow mb-3">Verdict</p>
+          <p class="eyebrow">Curator OS</p>
+          <h1 class="text-[18px] font-semibold mt-1">Verdict console</h1>
+        </div>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45 border border-white/15 px-2 py-1">v0.2</span>
+      </header>
+
+      <!-- 1. Subject card -->
+      <div class="mb-5">
+        <p class="eyebrow mb-3">Subject card</p>
+        <label for="cardName" class="form-label">Name &amp; set</label>
+        <input id="cardName" type="text"
+          autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+          class="input"
+          placeholder="Charizard ex SAR / Obsidian Flames 215" />
+      </div>
+
+      <!-- 2-6. Pricing -->
+      <div class="mb-5">
+        <p class="eyebrow mb-3">Pricing</p>
+        <div class="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <span id="vStrip" class="verdict-strip strip-neutral">Pending</span>
+            <label for="asking" class="form-label">Asking (RM)</label>
+            <input id="asking" type="number" inputmode="numeric" min="0" step="1"
+              class="input font-mono" placeholder="0" />
           </div>
-          <p id="vVerdict" class="verdict-line v-neutral mt-1">Awaiting input.</p>
-        </div>
-
-        <div class="my-6 h-px bg-rule"></div>
-
-        <!-- Note -->
-        <div class="flex-1">
-          <p class="eyebrow mb-3">Operator note</p>
-          <p id="vNote" class="text-navy-500 text-[14px] leading-relaxed">
-            —
-          </p>
-        </div>
-
-        <!-- Footer -->
-        <div class="mt-8 pt-5 border-t border-rule">
-          <div class="flex items-end justify-between gap-4 flex-wrap">
-            <p class="mono text-[10px] uppercase tracking-[0.18em] text-navy-400">
-              Curator OS · <span id="vDate"></span>
-            </p>
-            <p class="text-[10px] text-navy-400 leading-snug max-w-[60%] text-right">
-              Verdict reflects current market data and your stated thesis. Physical inspection remains your responsibility.
-            </p>
+          <div>
+            <label for="median" class="form-label">Sold median (RM)</label>
+            <input id="median" type="number" inputmode="numeric" min="0" step="1"
+              class="input font-mono" placeholder="0" />
           </div>
         </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label for="rangeLow" class="form-label">Range low</label>
+            <input id="rangeLow" type="number" inputmode="numeric" min="0" step="1"
+              class="input font-mono" placeholder="0" />
+          </div>
+          <div>
+            <label for="rangeHigh" class="form-label">Range high</label>
+            <input id="rangeHigh" type="number" inputmode="numeric" min="0" step="1"
+              class="input font-mono" placeholder="0" />
+          </div>
+          <div>
+            <label for="nCount" class="form-label">n (count)</label>
+            <input id="nCount" type="number" inputmode="numeric" min="0" step="1"
+              class="input font-mono" placeholder="—" />
+          </div>
+        </div>
+      </div>
 
-      </article>
+      <!-- 8. Operator note -->
+      <div class="mb-5">
+        <label for="note" class="form-label">Operator note</label>
+        <textarea id="note" rows="3" class="input"
+          placeholder="Sold comps cluster 720–780 last 30 days. Bid lower."></textarea>
+      </div>
+
+      <!-- 9-10. Signals -->
+      <div class="mb-5">
+        <p class="eyebrow mb-3">Signals</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="reprintRisk" class="form-label">Reprint risk</label>
+            <select id="reprintRisk" class="input">
+              <option value="Low" selected>Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+          <div>
+            <label for="trend" class="form-label">Trend</label>
+            <select id="trend" class="input">
+              <option value="Rising">Rising</option>
+              <option value="Stable" selected>Stable</option>
+              <option value="Falling">Falling</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-2 no-print">
+        <button id="resetBtn" type="button" class="btn-min">Reset</button>
+        <button id="printBtn" type="button" class="btn-min">Print verdict</button>
+      </div>
     </section>
-  </main>
+
+    <!-- ============== RIGHT: DISPLAY ============== -->
+    <section class="display-col">
+
+      <!-- A. Verdict banner -->
+      <div class="verdict-banner-section text-center pt-1 pb-2">
+        <p class="eyebrow mb-1">Subject card</p>
+        <p id="cardNameDisplay" class="text-[13px] text-white/70 font-medium tracking-wide mb-3 truncate" style="min-height: 1.2em;">—</p>
+        <div class="verdict-wrap relative inline-block">
+          <div id="verdictText" class="verdict-text v-pending">—</div>
+        </div>
+        <p id="deltaText" class="mt-3 font-mono text-[13px] text-white/55 tracking-wide" style="min-height: 1em;"></p>
+      </div>
+
+      <!-- B. Metric grid 2×2 -->
+      <div class="grid grid-cols-2 gap-3 my-2">
+        <div class="metric">
+          <div class="metric-label">Asking</div>
+          <div id="cAsking" class="metric-value">RM —</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Sold median</div>
+          <div id="cMedian" class="metric-value">RM —</div>
+          <div id="cMedianSub" class="metric-sub" style="visibility: hidden;">n=—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Sold range</div>
+          <div id="cRange" class="metric-value">RM — – —</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Reprint risk</div>
+          <div class="mt-1"><span id="cReprint" class="badge b-steal">Low</span></div>
+        </div>
+      </div>
+
+      <!-- C. Profile pills -->
+      <div class="my-2">
+        <p class="eyebrow mb-2">Profile</p>
+        <div class="flex gap-2">
+          <button type="button" class="pill active" data-profile="Collector">Collector</button>
+          <button type="button" class="pill"        data-profile="Flipper">Flipper</button>
+          <button type="button" class="pill"        data-profile="Investor">Investor</button>
+        </div>
+      </div>
+
+      <!-- D. Operator note display -->
+      <div id="opNoteDisplay" class="op-note-display empty my-2">Operator note appears here as you type</div>
+
+      <!-- E. Educator panel -->
+      <div class="edu my-2" id="eduPanel">
+        <button type="button" class="edu-toggle" id="eduToggle">
+          <span id="eduLabel">Why this verdict ↓</span>
+          <span class="font-mono text-[11px]" style="letter-spacing:0.10em;">composite <span id="composite">—/100</span></span>
+        </button>
+        <div class="edu-body">
+          <div class="pillar-row">
+            <div class="pillar-label">Pillar A<small>Card fundamentals</small></div>
+            <div class="pillar-score-cell">
+              <input id="pA" type="number" inputmode="numeric" min="0" max="40" placeholder="0" class="pillar-score-input" />
+              <span class="pillar-out">/ 40</span>
+            </div>
+            <input id="pAExp" type="text" autocomplete="off" placeholder="Print run, format relevance, artist edge" class="pillar-reason" />
+          </div>
+          <div class="pillar-row">
+            <div class="pillar-label">Pillar B<small>Market dynamics</small></div>
+            <div class="pillar-score-cell">
+              <input id="pB" type="number" inputmode="numeric" min="0" max="30" placeholder="0" class="pillar-score-input" />
+              <span class="pillar-out">/ 30</span>
+            </div>
+            <input id="pBExp" type="text" autocomplete="off" placeholder="Velocity, depth, trend direction" class="pillar-reason" />
+          </div>
+          <div class="pillar-row">
+            <div class="pillar-label">Pillar C<small>Pricing edge</small></div>
+            <div class="pillar-score-cell">
+              <input id="pC" type="number" inputmode="numeric" min="0" max="20" placeholder="0" class="pillar-score-input" />
+              <span class="pillar-out">/ 20</span>
+            </div>
+            <input id="pCExp" type="text" autocomplete="off" placeholder="Spread vs comp median, room to negotiate" class="pillar-reason" />
+          </div>
+          <div class="pillar-row">
+            <div class="pillar-label">Pillar D<small>User fit</small></div>
+            <div class="pillar-score-cell">
+              <input id="pD" type="number" inputmode="numeric" min="0" max="10" placeholder="0" class="pillar-score-input" />
+              <span class="pillar-out">/ 10</span>
+            </div>
+            <input id="pDExp" type="text" autocomplete="off" placeholder="Aligns with stated horizon and capital" class="pillar-reason" />
+          </div>
+
+          <div class="composite-row">
+            <span class="metric-label" style="margin-bottom:0; color: rgba(255,255,255,0.55);">Composite</span>
+            <span id="compositeBig" class="font-mono font-semibold text-white" style="font-size:18px;">—/100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- F. Thresholds -->
+      <div id="thresholdsRow" class="thresholds my-1" style="visibility: hidden;">
+        <span class="label" style="color:#5DCAA5;">STEAL ≤</span> <span id="stealAt">RM —</span>
+        <span class="text-white/25 mx-3">|</span>
+        <span class="label" style="color:#F09595;">WALK ≥</span> <span id="walkAt">RM —</span>
+      </div>
+
+      <!-- G. Footer -->
+      <div class="foot flex items-center justify-between border-t border-white/10 pt-2 mt-auto">
+        <span>curator-os-landing.vercel.app</span>
+        <span>Verdict #<span id="verdictId">—</span></span>
+        <span id="dateLabel">—</span>
+      </div>
+    </section>
+
+  </div>
 
   <script>
     (function () {
       const $ = (id) => document.getElementById(id);
 
       const els = {
+        // form (left)
         cardName: $("cardName"),
-        setNumber: $("setNumber"),
-        condition: $("condition"),
         asking: $("asking"),
-        compLow: $("compLow"),
-        compHigh: $("compHigh"),
+        median: $("median"),
+        rangeLow: $("rangeLow"),
+        rangeHigh: $("rangeHigh"),
+        nCount: $("nCount"),
+        note: $("note"),
         reprintRisk: $("reprintRisk"),
         trend: $("trend"),
-        profile: $("profile"),
-        verdict: $("verdict"),
-        note: $("note"),
 
-        vCard: $("vCard"),
-        vName: $("vName"),
-        vSet: $("vSet"),
-        vAsking: $("vAsking"),
-        vComp: $("vComp"),
-        vCondition: $("vCondition"),
-        vTrend: $("vTrend"),
-        vProfile: $("vProfile"),
-        vReprint: $("vReprint"),
-        vSpread: $("vSpread"),
-        vStrip: $("vStrip"),
-        vVerdict: $("vVerdict"),
-        vNote: $("vNote"),
-        vDate: $("vDate"),
+        // verdict + display (right)
+        cardNameDisplay: $("cardNameDisplay"),
+        verdictText: $("verdictText"),
+        verdictWrap: document.querySelector(".verdict-wrap"),
+        deltaText: $("deltaText"),
+        cAsking: $("cAsking"),
+        cMedian: $("cMedian"),
+        cMedianSub: $("cMedianSub"),
+        cRange: $("cRange"),
+        cReprint: $("cReprint"),
+        opNoteDisplay: $("opNoteDisplay"),
 
+        // educator
+        eduPanel: $("eduPanel"),
+        eduToggle: $("eduToggle"),
+        eduLabel: $("eduLabel"),
+        composite: $("composite"),
+        compositeBig: $("compositeBig"),
+        pA: $("pA"), pB: $("pB"), pC: $("pC"), pD: $("pD"),
+        pAExp: $("pAExp"), pBExp: $("pBExp"), pCExp: $("pCExp"), pDExp: $("pDExp"),
+
+        // thresholds + footer
+        thresholdsRow: $("thresholdsRow"),
+        stealAt: $("stealAt"),
+        walkAt: $("walkAt"),
+        verdictId: $("verdictId"),
+        dateLabel: $("dateLabel"),
+
+        // controls
         printBtn: $("printBtn"),
         resetBtn: $("resetBtn"),
+        pills: Array.from(document.querySelectorAll(".pill[data-profile]")),
       };
 
-      // Date in footer
+      // ---------- Footer date + verdict id ----------
       const now = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      els.vDate.textContent =
-        String(now.getDate()).padStart(2, "0") + " " +
-        months[now.getMonth()] + " " + now.getFullYear();
+      els.dateLabel.textContent = `${pad(now.getDate())} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      els.verdictId.textContent =
+        String(now.getFullYear()).slice(2) + pad(now.getMonth() + 1) + pad(now.getDate())
+        + "-" + pad(now.getHours()) + pad(now.getMinutes());
 
+      // ---------- State ----------
+      let profile = "Collector";
+      let lastTier = null;
+
+      function num(el) {
+        const v = el.value;
+        if (v === "" || v === null || v === undefined) return null;
+        const n = Number(v);
+        return isNaN(n) ? null : n;
+      }
       function fmtRM(n) {
         if (n === null || n === undefined || n === "" || isNaN(n)) return null;
-        const v = Number(n);
-        return "RM " + v.toLocaleString("en-MY", { maximumFractionDigits: 0 });
+        return "RM " + Number(n).toLocaleString("en-MY", { maximumFractionDigits: 0 });
       }
 
-      function setReprintBadge(level) {
-        els.vReprint.textContent = level;
-        els.vReprint.classList.remove("badge-low","badge-mod","badge-high","badge-vhigh");
-        switch (level) {
-          case "Low":       els.vReprint.classList.add("badge-low"); break;
-          case "Moderate":  els.vReprint.classList.add("badge-mod"); break;
-          case "High":      els.vReprint.classList.add("badge-high"); break;
-          case "Very High": els.vReprint.classList.add("badge-vhigh"); break;
+      // ---------- Verdict logic ----------
+      // spread % = (asking - median) / median * 100
+      // Boundaries are inclusive on the upper side (≤).
+      // Profile rules override baseline tiers.
+      function computeVerdict(asking, median, profile, reprint) {
+        if (!asking || !median || median <= 0 || asking <= 0) return null;
+        const spread = ((asking - median) / median) * 100;
+
+        if (profile === "Flipper") {
+          if (spread <= -15) return "STEAL";
+          if (spread <= -5)  return "BUY";
+          return "WALK";                        // > -5%  (no flip margin)
         }
+        if (profile === "Investor" && reprint === "Low") {
+          if (spread <= -15) return "STEAL";    // lean STEAL on big discount (per Test 2)
+          if (spread <= 20)  return "BUY";      // tolerate up to +20%
+          return "WALK";
+        }
+        if (profile === "Collector") {
+          if (spread <= -25) return "STEAL";
+          if (spread <= 10)  return "BUY";      // BUY extends through the NEGOTIATE band
+          return "WALK";                        // > +10%
+        }
+        // Investor with Medium/High reprint → baseline thresholds
+        if (spread <= -25) return "STEAL";
+        if (spread <= -5)  return "BUY";
+        if (spread <= 10)  return "NEGOTIATE";
+        return "WALK";
       }
 
-      function classifyVerdict(v) {
-        if (!v) return "neutral";
-        if (v.startsWith("Buy")) return "buy";
-        if (v.startsWith("Pass")) return "pass";
-        return "neutral"; // Negotiate or anything else
-      }
-
-      let lastVerdictKind = null;
-
+      // ---------- Render ----------
       function render() {
-        // Card name
-        const name = els.cardName.value.trim();
-        els.vName.textContent = name || "—";
-
-        // Set + number
-        const set = els.setNumber.value.trim();
-        els.vSet.textContent = set || "—";
-
-        // Asking
-        const asking = els.asking.value;
-        const askingFmt = fmtRM(asking);
-        els.vAsking.textContent = askingFmt || "RM —";
-
-        // Comp range
-        const lo = els.compLow.value;
-        const hi = els.compHigh.value;
-        const loFmt = fmtRM(lo);
-        const hiFmt = fmtRM(hi);
-        if (loFmt && hiFmt) {
-          els.vComp.textContent = loFmt + " – " + hiFmt;
-        } else if (loFmt) {
-          els.vComp.textContent = loFmt + " – —";
-        } else if (hiFmt) {
-          els.vComp.textContent = "— – " + hiFmt;
-        } else {
-          els.vComp.textContent = "RM — – RM —";
-        }
-
-        // Spread vs comp mid
-        if (asking && lo && hi && Number(lo) > 0 && Number(hi) > 0) {
-          const mid = (Number(lo) + Number(hi)) / 2;
-          if (mid > 0) {
-            const pct = ((Number(asking) - mid) / mid) * 100;
-            const sign = pct > 0 ? "+" : "";
-            els.vSpread.textContent = sign + pct.toFixed(1) + "% vs RM " + Math.round(mid).toLocaleString("en-MY");
-          } else {
-            els.vSpread.textContent = "—";
-          }
-        } else {
-          els.vSpread.textContent = "—";
-        }
-
-        // Condition / trend / profile
-        els.vCondition.textContent = els.condition.value;
-        els.vTrend.textContent = els.trend.value;
-        els.vProfile.textContent = els.profile.value;
-
-        // Reprint badge
-        setReprintBadge(els.reprintRisk.value);
-
-        // Verdict
-        const verdictText = els.verdict.value;
-        const kind = classifyVerdict(verdictText);
-        els.vVerdict.classList.remove("v-buy","v-pass","v-neutral");
-        els.vStrip.classList.remove("strip-buy","strip-pass","strip-neutral");
-
-        if (kind === "buy") {
-          els.vVerdict.classList.add("v-buy");
-          els.vStrip.classList.add("strip-buy");
-          els.vStrip.textContent = "BUY";
-        } else if (kind === "pass") {
-          els.vVerdict.classList.add("v-pass");
-          els.vStrip.classList.add("strip-pass");
-          els.vStrip.textContent = "PASS";
-        } else {
-          els.vVerdict.classList.add("v-neutral");
-          els.vStrip.classList.add("strip-neutral");
-          els.vStrip.textContent = verdictText.toLowerCase().includes("negotiate") ? "NEGOTIATE" : "REVIEW";
-        }
-        els.vVerdict.textContent = verdictText;
-
-        // Note
+        const asking = num(els.asking);
+        const median = num(els.median);
+        const rangeLow = num(els.rangeLow);
+        const rangeHigh = num(els.rangeHigh);
+        const nVal = num(els.nCount);
+        const reprint = els.reprintRisk.value;
         const note = els.note.value.trim();
-        els.vNote.textContent = note || "—";
+        const cardName = els.cardName.value.trim();
 
-        // Subtle border-flash when the verdict KIND changes
-        if (lastVerdictKind !== null && lastVerdictKind !== kind) {
-          els.vCard.classList.remove("flash");
-          // force reflow so the animation restarts
-          void els.vCard.offsetWidth;
-          els.vCard.classList.add("flash");
+        // Card name on banner
+        els.cardNameDisplay.textContent = cardName || "—";
+
+        // Metric: asking
+        els.cAsking.textContent = fmtRM(asking) ?? "RM —";
+
+        // Metric: sold median + n
+        els.cMedian.textContent = fmtRM(median) ?? "RM —";
+        if (nVal !== null && nVal > 0) {
+          els.cMedianSub.textContent = `n=${nVal}`;
+          els.cMedianSub.style.visibility = "visible";
+        } else {
+          els.cMedianSub.style.visibility = "hidden";
         }
-        lastVerdictKind = kind;
+
+        // Metric: range
+        const lo = fmtRM(rangeLow);
+        const hi = fmtRM(rangeHigh);
+        if (lo && hi)      els.cRange.textContent = `${lo} – ${hi}`;
+        else if (lo)       els.cRange.textContent = `${lo} – —`;
+        else if (hi)       els.cRange.textContent = `— – ${hi}`;
+        else               els.cRange.textContent = "RM — – —";
+
+        // Metric: reprint badge
+        els.cReprint.textContent = reprint;
+        els.cReprint.classList.remove("b-steal","b-negotiate","b-walk");
+        if (reprint === "Low")          els.cReprint.classList.add("b-steal");
+        else if (reprint === "Medium")  els.cReprint.classList.add("b-negotiate");
+        else                            els.cReprint.classList.add("b-walk");
+
+        // Operator note display
+        if (note) {
+          els.opNoteDisplay.textContent = note;
+          els.opNoteDisplay.classList.remove("empty");
+        } else {
+          els.opNoteDisplay.textContent = "Operator note appears here as you type";
+          els.opNoteDisplay.classList.add("empty");
+        }
+
+        // Composite
+        const a = num(els.pA) ?? 0;
+        const b = num(els.pB) ?? 0;
+        const c = num(els.pC) ?? 0;
+        const d = num(els.pD) ?? 0;
+        const total = a + b + c + d;
+        const anyEntered = [els.pA, els.pB, els.pC, els.pD].some(el => el.value !== "");
+        const compText = anyEntered ? `${total}/100` : "—/100";
+        els.composite.textContent = compText;
+        els.compositeBig.textContent = compText;
+
+        // Thresholds (75% / 110% of median, hidden when median empty)
+        if (median && median > 0) {
+          els.stealAt.textContent = fmtRM(median * 0.75);
+          els.walkAt.textContent  = fmtRM(median * 1.10);
+          els.thresholdsRow.style.visibility = "visible";
+        } else {
+          els.thresholdsRow.style.visibility = "hidden";
+        }
+
+        // Verdict tier + delta
+        const tier = computeVerdict(asking, median, profile, reprint);
+        els.verdictText.classList.remove("v-steal","v-buy","v-negotiate","v-walk","v-pending");
+        if (!tier) {
+          els.verdictText.classList.add("v-pending");
+          els.verdictText.textContent = "—";
+          els.deltaText.textContent = "";
+        } else {
+          const cls = { STEAL: "v-steal", BUY: "v-buy", NEGOTIATE: "v-negotiate", WALK: "v-walk" };
+          els.verdictText.classList.add(cls[tier]);
+          els.verdictText.textContent = tier;
+
+          const spread = ((asking - median) / median) * 100;
+          const dir  = spread >= 0 ? "above" : "below";
+          const sign = spread > 0 ? "+" : (spread < 0 ? "−" : "");
+          els.deltaText.textContent =
+            `Δ vs market: ${sign}${Math.abs(spread).toFixed(1)}% ${dir} sold median`;
+        }
+
+        // Tier-change flash
+        if (tier && lastTier !== null && tier !== lastTier) {
+          els.verdictWrap.classList.remove("flash");
+          void els.verdictWrap.offsetWidth;
+          els.verdictWrap.classList.add("flash");
+        }
+        lastTier = tier;
       }
 
-      // Wire up live updates
-      ["cardName","setNumber","condition","asking","compLow","compHigh",
-       "reprintRisk","trend","profile","verdict","note"].forEach((id) => {
+      // ---------- Wire inputs ----------
+      const liveIds = ["cardName","asking","median","rangeLow","rangeHigh","nCount","note",
+                       "reprintRisk","trend",
+                       "pA","pB","pC","pD","pAExp","pBExp","pCExp","pDExp"];
+      liveIds.forEach((id) => {
         const el = els[id];
+        if (!el) return;
         const evt = (el.tagName === "SELECT") ? "change" : "input";
         el.addEventListener(evt, render);
       });
 
+      // ---------- Profile pill behavior (the moat moment) ----------
+      els.pills.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          els.pills.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          profile = btn.dataset.profile;
+          render();
+        });
+      });
+
+      // ---------- Educator toggle ----------
+      els.eduToggle.addEventListener("click", () => {
+        const isOpen = els.eduPanel.classList.toggle("open");
+        els.eduLabel.textContent = isOpen ? "Why this verdict ↑" : "Why this verdict ↓";
+      });
+
+      // ---------- Buttons ----------
       els.printBtn.addEventListener("click", () => window.print());
       els.resetBtn.addEventListener("click", () => {
-        els.cardName.value = "";
-        els.setNumber.value = "";
-        els.condition.value = "Near Mint";
-        els.asking.value = "";
-        els.compLow.value = "";
-        els.compHigh.value = "";
-        els.reprintRisk.value = "Low";
-        els.trend.value = "Sideways";
-        els.profile.value = "Cash-rich flipper";
-        els.verdict.value = "Buy at this price";
-        els.note.value = "";
-        lastVerdictKind = null;
+        liveIds.forEach((id) => {
+          const el = els[id];
+          if (!el) return;
+          if (el.tagName === "SELECT") {
+            if (id === "reprintRisk") el.value = "Low";
+            else if (id === "trend")  el.value = "Stable";
+          } else {
+            el.value = "";
+          }
+        });
+        els.pills.forEach((b) => b.classList.toggle("active", b.dataset.profile === "Collector"));
+        profile = "Collector";
+        lastTier = null;
         render();
         els.cardName.focus();
       });
