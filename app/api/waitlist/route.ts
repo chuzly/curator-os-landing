@@ -107,8 +107,17 @@ export async function POST(req: Request) {
   const notifyEmail = process.env.NOTIFY_EMAIL;
   const fromEmail = process.env.FROM_EMAIL ?? "Curator OS <onboarding@resend.dev>";
 
+  console.log(
+    "[waitlist] env check — RESEND_API_KEY:",
+    apiKey ? `${apiKey.slice(0, 10)}...` : "(missing)",
+    "NOTIFY_EMAIL:",
+    notifyEmail ?? "(missing)",
+    "FROM_EMAIL:",
+    fromEmail,
+  );
+
   if (!apiKey || !notifyEmail) {
-    console.error("Waitlist: missing RESEND_API_KEY or NOTIFY_EMAIL.");
+    console.error("[waitlist] missing RESEND_API_KEY or NOTIFY_EMAIL.");
     return NextResponse.json(
       { error: "Waitlist is temporarily unavailable. Please try again shortly." },
       { status: 500 },
@@ -118,8 +127,11 @@ export async function POST(req: Request) {
   const resend = new Resend(apiKey);
   const { text, html } = buildBody(payload);
 
+  console.log("[waitlist] calling resend.emails.send for", payload.email, "type=", payload.type);
+
+  let result;
   try {
-    await resend.emails.send({
+    result = await resend.emails.send({
       from: fromEmail,
       to: [notifyEmail],
       replyTo: payload.email,
@@ -128,7 +140,17 @@ export async function POST(req: Request) {
       html,
     });
   } catch (err) {
-    console.error("Waitlist send failed:", err);
+    console.error("[waitlist] resend.emails.send threw:", err);
+    return NextResponse.json(
+      { error: "Could not record your signup. Please try again." },
+      { status: 500 },
+    );
+  }
+
+  console.log("[waitlist] resend response:", JSON.stringify(result));
+
+  if (result?.error) {
+    console.error("[waitlist] resend returned error:", result.error);
     return NextResponse.json(
       { error: "Could not record your signup. Please try again." },
       { status: 502 },
