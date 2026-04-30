@@ -1021,46 +1021,46 @@
           <div class="edu-body">
             <div class="pillar-row">
               <div class="pillar-header">
-                <div class="pillar-label">Pillar A<small>Is the card good?</small></div>
+                <div class="pillar-label">Pillar A<small>Card fundamentals</small></div>
                 <div class="pillar-score-cell">
                   <input id="pA" type="number" inputmode="numeric" min="0" max="40" placeholder="0" class="pillar-score-input" />
                   <span class="pillar-out">/ 40</span>
                 </div>
               </div>
-              <div class="pillar-def">Will the company print more and flood the market? Are people still wanting it?</div>
+              <div class="pillar-def">Quality of the card itself — will more get printed, are people still wanting it?</div>
               <input id="pAExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="pillar-row">
               <div class="pillar-header">
-                <div class="pillar-label">Pillar B<small>Is there a real market?</small></div>
+                <div class="pillar-label">Pillar B<small>Market dynamics</small></div>
                 <div class="pillar-score-cell">
                   <input id="pB" type="number" inputmode="numeric" min="0" max="30" placeholder="0" class="pillar-score-input" />
                   <span class="pillar-out">/ 30</span>
                 </div>
               </div>
-              <div class="pillar-def">Are people actively buying and selling? Where is the price heading?</div>
+              <div class="pillar-def">Whether there's actually a working market — buyers, sellers, price direction.</div>
               <input id="pBExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="pillar-row">
               <div class="pillar-header">
-                <div class="pillar-label">Pillar C<small>Is the price fair?</small></div>
+                <div class="pillar-label">Pillar C<small>Pricing edge</small></div>
                 <div class="pillar-score-cell">
                   <input id="pC" type="number" inputmode="numeric" min="0" max="20" placeholder="0" class="pillar-score-input" />
                   <span class="pillar-out">/ 20</span>
                 </div>
               </div>
-              <div class="pillar-def">How does the asking price compare to what people are actually paying?</div>
+              <div class="pillar-def">Trade math — asking price vs what people are actually paying.</div>
               <input id="pCExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="pillar-row">
               <div class="pillar-header">
-                <div class="pillar-label">Pillar D<small>Right card for YOU?</small></div>
+                <div class="pillar-label">Pillar D<small>User fit</small></div>
                 <div class="pillar-score-cell">
                   <input id="pD" type="number" inputmode="numeric" min="0" max="10" placeholder="0" class="pillar-score-input" />
                   <span class="pillar-out">/ 10</span>
                 </div>
               </div>
-              <div class="pillar-def">Buying to keep it, flip it fast, or hold for years — answer changes.</div>
+              <div class="pillar-def">Right card for YOU — depends if you're collecting, flipping, or holding long-term.</div>
               <input id="pDExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
             </div>
             <div class="composite-row">
@@ -1518,7 +1518,7 @@
         const reprint = state.comps.reprintRisk || "Low";
         const profile = state.profile;
 
-        // ---- Pillar A — Is the card good? (reprint × trend) ----
+        // ---- Pillar A — Card fundamentals (reprint × trend) ----
         let A;
         if (reprint === "High") {
           A = "High reprint risk — Pokémon may make more, hurting price long-term.";
@@ -1532,7 +1532,7 @@
           else                          A = "Some reprint risk to watch as set rotations happen.";
         }
 
-        // ---- Pillar B — Is there a real market? (n × trend) ----
+        // ---- Pillar B — Market dynamics (n × trend) ----
         let B;
         if (nVal === null || nVal === undefined || nVal <= 0) {
           B = "Not enough sales data yet — verdict is rough until more sell.";
@@ -1550,7 +1550,7 @@
           else                          B = `Few recent sales (${nVal}) — verdict is rough, not exact.`;
         }
 
-        // ---- Pillar C — Is the price fair? (asking vs typical-price bands) ----
+        // ---- Pillar C — Pricing edge (asking-vs-typical-price bands) ----
         let C;
         if (asking === null || asking === undefined || median === null || median === undefined) {
           C = "Need both asking price and typical price to compare.";
@@ -1567,7 +1567,7 @@
           else                       C = `Asking is ${spreadAbs}% above typical — overpaying unless other factors justify it.`;
         }
 
-        // ---- Pillar D — Right card for YOU? (profile × asking-vs-typical × reprint) ----
+        // ---- Pillar D — User fit (profile × asking-vs-typical × reprint) ----
         let D;
         const haveSpreadD = (asking !== null && asking !== undefined && median !== null && median !== undefined && median > 0);
         if (!haveSpreadD) {
