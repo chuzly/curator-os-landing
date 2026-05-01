@@ -1,5 +1,12 @@
-// Haiku 4.5 used for speed/cost. If comp estimation quality drops (wide ranges, miscategorized cards, hallucinated venues), revert to claude-sonnet-4-6.
-// Note: web_search re-enable was attempted at b09e9d8, hit Vercel 60s ceiling. Reverted. Until Vercel Pro upgrade or Phase 3 direct-API integration, Layer 2 returns training-only estimates. Operator should verify against Shiny App for any off-list card before showing customer.
+// Opus 4.7 — escalated from Haiku 4.5 for comp accuracy diagnostic.
+// Hypothesis: Opus's stronger reasoning may produce more careful price anchoring on training data
+// vs Haiku's looser sampling that produced wide variance and large miss on hyped chase cards.
+// Note: this does NOT fix the underlying no-live-data limitation. Operator must still verify
+// against Shiny App for any off-list card before showing customer.
+// If Opus prices match Haiku's pattern (3-4x off on chase cards), revert to Haiku for cost (claude-haiku-4-5-20251001).
+// If Opus is meaningfully more accurate or more honest about uncertainty, keep Opus.
+// Context: web_search re-enable was attempted at b09e9d8, hit Vercel 60s ceiling. Reverted.
+// Until Vercel Pro upgrade or Phase 3 direct-API integration, Layer 2 returns training-only estimates.
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -130,12 +137,12 @@ export async function POST(req: Request) {
   try {
     const response = await client.messages.create(
       {
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
+        model: "claude-opus-4-7",
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       },
-      { timeout: 30_000 },
+      { timeout: 55_000 },
     );
 
     // Count actual server-side tool invocations from the response content blocks.
@@ -173,7 +180,7 @@ export async function POST(req: Request) {
     console.error("[get-comps] error:", err);
     console.error(`[get-comps] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      console.error("[get-comps] timeout after 30s");
+      console.error("[get-comps] timeout after 55s");
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
     if (err instanceof Anthropic.APIError) {
