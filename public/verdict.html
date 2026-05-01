@@ -693,9 +693,13 @@
     /* Operator review interstitial — gates between API success and customer-facing verdict */
     .op-review-card {
       max-width: 640px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
       background: #0a1628;
       border: 1px solid #5DCAA5;
-      padding: 24px;
+      padding: 20px;
+      box-sizing: border-box;
     }
     .op-review-header {
       font-size: 11px; letter-spacing: 0.20em; text-transform: uppercase;
@@ -786,6 +790,25 @@
     .op-review-btn.secondary:hover { background: rgba(217, 119, 6, 0.10); }
     .op-review-btn.tertiary { color: #F09595; }
     .op-review-btn.tertiary:hover { background: rgba(240, 149, 149, 0.10); }
+
+    /* Op-review modal — mobile / tablet portrait sizing */
+    @media (max-width: 900px) {
+      .op-review-card {
+        max-height: 95vh;
+        padding: 16px;
+      }
+      .op-review-stats {
+        grid-template-columns: 80px 1fr;
+        gap: 4px 12px;
+      }
+      .op-review-listings {
+        max-height: 140px;
+      }
+      .op-review-btn {
+        padding: 14px 12px;
+        font-size: 12px;
+      }
+    }
 
     /* Capture form fields */
     .form-field { margin-bottom: 14px; }
@@ -1805,6 +1828,18 @@
       // ============================================================
       // VERDICT VIEW RENDER
       // ============================================================
+      // Banner copy switches based on how we ended up in manual mode.
+      function getManualBannerText() {
+        const src = state.comps.source || "";
+        if (src.includes("Layer 2 returned no usable comps") || src.includes("manual entry")) {
+          return "LIVE OPERATOR RESEARCH — VERIFY ON SHINY APP, ENTER REAL COMPS";
+        }
+        if (src.includes("operator-verified")) {
+          return "OPERATOR VERIFIED (ADJUSTED FROM API)";
+        }
+        return "MANUAL MODE — COMPS ENTERED BY OPERATOR";
+      }
+
       function renderVerdictView() {
         // Card name
         const cardLabel = [
@@ -1898,7 +1933,10 @@
         }
 
         // Manual mode banner — only when full manual (API failed / user-chosen),
-        // NOT when operator just tapped a single tile to override.
+        // NOT when operator just tapped a single tile to override. Banner copy
+        // is dynamic so the operator + customer can see why we're in manual
+        // mode (live research vs. operator-verified override vs. plain manual).
+        els.compsManualBanner.textContent = getManualBannerText();
         els.compsManualBanner.style.display = state.compsManual ? "" : "none";
 
         // Apply pillar defaults
@@ -2203,9 +2241,14 @@
       // EVENT HANDLERS — Verdict (Screen 3)
       // ============================================================
       // Run the post-decision transition: flip verdict screen to result,
-      // reset overrides, sync manual inputs to current state.comps, render,
-      // focus asking. Used by all three terminal paths (manual mode, "Looks
-      // right", and "Override" from the operator-review interstitial).
+      // reset overrides, render, then (only if compsManual) sync manual tile
+      // inputs from current state.comps. Used by all three terminal paths
+      // (manual mode, "Looks right", and "Override" from the operator-review
+      // interstitial).
+      //
+      // Render runs BEFORE sync so manual-mode tile inputs are guaranteed to
+      // be in their final DOM position before we write values into them.
+      // Re-querying defensively in case renderVerdictView swapped any nodes.
       function transitionToVerdictResult() {
         setCompsState("result");
         state.asking = null;
@@ -2214,14 +2257,35 @@
         state.tileOverrides.clear();
         state.lastTier = null;
         els.vAsking.value = "";
-        els.mManMedian.value = state.comps.median ?? "";
-        els.mManLow.value = state.comps.rangeLow ?? "";
-        els.mManHigh.value = state.comps.rangeHigh ?? "";
-        els.mManN.value = state.comps.n ?? "";
-        els.mManReprint.value = state.comps.reprintRisk || "Low";
-        els.mManTrend.value = state.comps.trend || "Stable";
-        els.mManNote.value = state.comps.operatorNote || "";
+
         renderVerdictView();
+
+        if (state.compsManual) {
+          const $ = (id) => document.getElementById(id);
+          const mManMedian  = $("mManMedian")  || els.mManMedian;
+          const mManLow     = $("mManLow")     || els.mManLow;
+          const mManHigh    = $("mManHigh")    || els.mManHigh;
+          const mManN       = $("mManN")       || els.mManN;
+          const mManReprint = $("mManReprint") || els.mManReprint;
+          const mManTrend   = $("mManTrend")   || els.mManTrend;
+          const mManNote    = $("mManNote")    || els.mManNote;
+
+          if (mManMedian)  mManMedian.value  = state.comps.median ?? "";
+          if (mManLow)     mManLow.value     = state.comps.rangeLow ?? "";
+          if (mManHigh)    mManHigh.value    = state.comps.rangeHigh ?? "";
+          if (mManN)       mManN.value       = state.comps.n ?? "";
+          if (mManReprint) mManReprint.value = state.comps.reprintRisk || "Low";
+          if (mManTrend)   mManTrend.value   = state.comps.trend || "Stable";
+          if (mManNote)    mManNote.value    = state.comps.operatorNote || "";
+
+          console.log("[verdict] manual tiles synced:", {
+            median: state.comps.median,
+            rangeLow: state.comps.rangeLow,
+            rangeHigh: state.comps.rangeHigh,
+            n: state.comps.n,
+          });
+        }
+
         setTimeout(() => els.vAsking.focus(), 50);
       }
 
@@ -2321,6 +2385,16 @@
           state.comps.medianUSD = null;
           state.comps.rawListingsForAudit = [];
         }
+
+        console.log("[verdict] fetchComps decision:", {
+          needsManualEntry: dataForReview?.needsManualEntry,
+          hasMedianMYR: !!dataForReview?.medianMYR,
+          rawListingsCount: Array.isArray(dataForReview?.rawListingsForAudit)
+            ? dataForReview.rawListingsForAudit.length
+            : 0,
+          source: dataForReview?.source,
+          willShowModal: !!dataForReview,
+        });
 
         if (dataForReview) {
           // Success path — show interstitial, defer verdict render until operator decides.
