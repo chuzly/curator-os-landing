@@ -1,13 +1,19 @@
 // Opus 4.7 + domain-restricted web_search (eBay, eBay MY, TCGPlayer, PriceCharting, Cardmarket).
-// Vercel Pro tier — function timeout ceiling 300 sec. max_uses: 2 for primary + fallback search.
+// Vercel Pro tier — function timeout ceiling 300 sec. max_uses: 2 per call.
 // SDK timeout 240 sec, maxDuration 300 sec, gives 60 sec error-handling headroom.
 //
 // ARCHITECTURE: model returns a structured `listings` array of raw eBay sales it found via
 // web_search. The backend filters by condition (raw vs graded), drops IQR outliers, computes
 // median / low / high in USD, then converts to MYR (× 4.7). Model does NOT compute medians or
-// do FX conversion — those are deterministic backend operations. If model returns < 2 listings
-// or filters drop everything or median is implausibly low/high, the response carries
-// `needsManualEntry: true` so the client falls back to manual mode.
+// do FX conversion — those are deterministic backend operations.
+//
+// CONDITION CASCADE: if the requested condition (e.g. HP/MP/DMG) returns < 2 listings AND it's
+// a non-NM raw condition, the route automatically retries with condition="NM" and applies an
+// industry-standard discount multiplier to derive the requested condition's value. Mirrors how
+// Shiny App / TCGPlayer / PriceCharting handle thin-data condition tiers. Cascade response is
+// labelled with `cascadeUsed: true`, `confidence: "low"`, and a transparent source string.
+// If the cascade itself returns nothing usable (or condition is "Graded" with no fallback),
+// the response carries `needsManualEntry: true` and the client falls back to manual mode.
 //
 // Operator should still verify against Shiny App for any high-value off-list card before showing customer.
 import { NextResponse } from "next/server";
@@ -18,6 +24,20 @@ export const maxDuration = 300;
 
 // ---------- USD → MYR ----------
 const USD_MYR = 4.7;
+
+// ---------- Condition multipliers ----------
+// Industry-standard raw-condition discount factors relative to NM. Used only
+// when the cascade fires (requested condition had < 2 listings, fell back to NM).
+// Graded uses 1.00 since graded never cascades — graded comps require their
+// own search and have no NM-derived equivalent.
+const CONDITION_MULTIPLIER: Record<string, number> = {
+  NM: 1.00,
+  LP: 0.85,
+  MP: 0.65,
+  HP: 0.40,
+  DMG: 0.20,
+  Graded: 1.00,
+};
 
 // ---------- Types ----------
 
@@ -211,6 +231,100 @@ function dropOutliers(listings: Listing[]): Listing[] {
   return listings.filter((li) => li.priceUSD >= lo && li.priceUSD <= hi);
 }
 
+// ---------- Per-condition model call ----------
+
+// One round-trip to the model for a single condition. Catches its own errors
+// so the cascade pipeline in POST() can decide how to react without losing
+// to a thrown exception. Error returns: { listings: [], modelOutput: null }.
+async function searchConditionListings(
+  client: Anthropic,
+  cardName: string,
+  set: string,
+  cardNumber: string,
+  variant: string,
+  language: string,
+  condition: string,
+): Promise<{
+  listings: Listing[];
+  modelOutput: ModelOutput | null;
+  rawText: string;
+  toolUseCount: number;
+}> {
+  const userPrompt = [
+    `Card: ${cardName}`,
+    set ? `Set: ${set}` : null,
+    cardNumber ? `Number: ${cardNumber}` : null,
+    variant ? `Variant: ${variant}` : null,
+    language ? `Language: ${language}` : null,
+    `Condition: ${condition}`,
+    ``,
+    `Find recent sold comps and return the JSON object specified in the system prompt.`,
+  ].filter(Boolean).join("\n");
+
+  const t0 = Date.now();
+  let response;
+  try {
+    response = await client.messages.create(
+      {
+        model: "claude-opus-4-7",
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
+        tools: [
+          {
+            type: "web_search_20260209",
+            name: "web_search",
+            max_uses: 2,
+            allowed_domains: ["ebay.com", "ebay.com.my", "tcgplayer.com", "pricecharting.com", "cardmarket.com"],
+          } as unknown as Anthropic.Messages.ToolUnion,
+        ],
+      },
+      { timeout: 240_000 },
+    );
+  } catch (err) {
+    if (err instanceof Anthropic.APIConnectionTimeoutError) {
+      console.error(`[get-comps] (${condition}) timeout after 240s`);
+    } else if (err instanceof Anthropic.APIError) {
+      console.error(`[get-comps] (${condition}) Anthropic API error:`, err.status, err.message);
+    } else {
+      console.error(`[get-comps] (${condition}) model call failed:`, err);
+    }
+    return { listings: [], modelOutput: null, rawText: "", toolUseCount: 0 };
+  }
+
+  const toolUseCount = (response.content || []).filter(
+    (b) => b.type === "server_tool_use",
+  ).length;
+  console.log(
+    `[get-comps] (${condition}) call complete in ${Date.now() - t0}ms, tools=${toolUseCount || "none"}, blocks=${response.content?.length || 0}, stop_reason=${response.stop_reason}`,
+  );
+
+  const textBlocks = response.content.filter(
+    (b): b is Anthropic.TextBlock => b.type === "text",
+  );
+  const finalText = textBlocks.length ? textBlocks[textBlocks.length - 1].text : "";
+  if (!finalText) {
+    console.error(`[get-comps] (${condition}) no text block in response`);
+    return { listings: [], modelOutput: null, rawText: "", toolUseCount };
+  }
+
+  const parsed = extractJson(finalText);
+  if (!validateModelOutput(parsed)) {
+    console.error(
+      `[get-comps] (${condition}) model output failed schema validation:`,
+      finalText.slice(0, 300),
+    );
+    return { listings: [], modelOutput: null, rawText: finalText, toolUseCount };
+  }
+
+  return {
+    listings: parsed.listings,
+    modelOutput: parsed,
+    rawText: finalText,
+    toolUseCount,
+  };
+}
+
 // ---------- Route ----------
 
 export async function POST(req: Request) {
@@ -245,22 +359,13 @@ export async function POST(req: Request) {
   // Constructed up-front so every response shape (manual-entry or computed) carries it.
   const set = (body.set ?? "").trim();
   const cardNumber = (body.cardNumber ?? "").trim();
+  const variant = (body.variant ?? "").trim();
+  const language = (body.language ?? "").trim();
   console.log("[get-comps] eBay URL inputs:", { cardName, set, cardNumber });
   const queryParts = [cardName, set, cardNumber].filter(Boolean);
   const queryString = queryParts.join(" ").trim();
   const ebayQuery = encodeURIComponent(queryString);
   const ebayVerifyUrl = `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60`;
-
-  const userPrompt = [
-    `Card: ${cardName}`,
-    body.set ? `Set: ${body.set}` : null,
-    body.cardNumber ? `Number: ${body.cardNumber}` : null,
-    body.variant ? `Variant: ${body.variant}` : null,
-    body.language ? `Language: ${body.language}` : null,
-    `Condition: ${condition}`,
-    ``,
-    `Find recent sold comps and return the JSON object specified in the system prompt.`,
-  ].filter(Boolean).join("\n");
 
   const client = new Anthropic({ apiKey });
 
@@ -271,70 +376,54 @@ export async function POST(req: Request) {
   const t0 = Date.now();
 
   try {
-    const response = await client.messages.create(
-      {
-        model: "claude-opus-4-7",
-        max_tokens: 4096, // up from 2048 — listings array can run large
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-        tools: [
-          {
-            type: "web_search_20260209",
-            name: "web_search",
-            max_uses: 2,
-            allowed_domains: ["ebay.com", "ebay.com.my", "tcgplayer.com", "pricecharting.com", "cardmarket.com"],
-          } as unknown as Anthropic.Messages.ToolUnion,
-        ],
-      },
-      { timeout: 240_000 },
+    const isRawCondition = ["NM", "LP", "MP", "HP", "DMG"].includes(condition);
+
+    // Pass 1 — search at the requested condition.
+    const requestedResult = await searchConditionListings(
+      client, cardName, set, cardNumber, variant, language, condition,
     );
 
-    // Count actual server-side tool invocations from the response content blocks.
-    const toolUseCount = (response.content || []).filter(
-      (b) => b.type === "server_tool_use",
-    ).length;
-    console.log(
-      `[get-comps] tools used:`, toolUseCount || "none",
-      `, content blocks:`, response.content?.length || 0,
-    );
-    console.log(
-      `[get-comps] Anthropic call complete in ${Date.now() - t0}ms, stop_reason=${response.stop_reason}`,
-    );
+    let finalListings = requestedResult.listings;
+    let parsed = requestedResult.modelOutput;
+    let cascadeUsed = false;
+    let nmCount = 0;
 
-    // Find the last text block — that's the model's final answer after any tool use.
-    const textBlocks = response.content.filter(
-      (b): b is Anthropic.TextBlock => b.type === "text",
-    );
-    const finalText = textBlocks.length ? textBlocks[textBlocks.length - 1].text : "";
-    if (!finalText) {
-      console.error("[get-comps] no text block in response, stop_reason=", response.stop_reason);
-      return NextResponse.json({ error: "comps_failed" }, { status: 502 });
+    // Pass 2 (cascade) — if requested condition came back thin AND it's a
+    // non-NM raw condition, retry as NM and apply the multiplier later.
+    // Graded never cascades.
+    if (finalListings.length < 2 && isRawCondition && condition !== "NM") {
+      console.log(
+        `[get-comps] cascade — ${condition} returned ${finalListings.length} listings, retrying as NM`,
+      );
+      const nmResult = await searchConditionListings(
+        client, cardName, set, cardNumber, variant, language, "NM",
+      );
+      if (nmResult.listings.length >= 2) {
+        finalListings = nmResult.listings;
+        parsed = nmResult.modelOutput; // diagnosticNote / variantWarning come from NM call
+        nmCount = nmResult.listings.length;
+        cascadeUsed = true;
+      }
     }
 
-    const parsed = extractJson(finalText);
-    if (!validateModelOutput(parsed)) {
-      console.error("[get-comps] model output failed schema validation:", finalText.slice(0, 300));
-      return NextResponse.json({ error: "comps_failed" }, { status: 502 });
-    }
-
+    const multiplier = cascadeUsed ? (CONDITION_MULTIPLIER[condition] ?? 1.00) : 1.00;
     console.log(
-      `[get-comps] model returned ${parsed.listings.length} listings, condition=${condition}`,
+      `[get-comps] cascade decision: requested=${condition}, requestedListings=${requestedResult.listings.length}, cascadeUsed=${cascadeUsed}, nmListings=${nmCount}, multiplier=${multiplier}`,
     );
 
-    // ---- Manual-entry early return: model returned almost nothing ----
-    if (parsed.listings.length < 2) {
-      console.log("[get-comps] needsManualEntry — model returned <2 listings");
+    // ---- Manual-entry early return: still nothing usable after cascade ----
+    if (finalListings.length < 2) {
+      console.log("[get-comps] needsManualEntry — no usable listings even after cascade");
       return NextResponse.json({
         needsManualEntry: true,
-        reason: parsed.diagnosticNote,
+        reason: parsed?.diagnosticNote ?? "No usable listings returned by API.",
         operatorNote: "Live API returned insufficient comps. Manual Shiny App lookup recommended.",
         ebayVerifyUrl,
       });
     }
 
     // ---- Filter by condition (raw vs graded) ----
-    const isRawCondition = ["NM", "LP", "MP", "HP", "DMG"].includes(condition);
-    let filtered = parsed.listings.filter((li) => li.priceUSD > 0); // drop nonsense prices first
+    let filtered = finalListings.filter((li) => li.priceUSD > 0);
     if (isRawCondition) {
       filtered = filtered.filter((li) => !li.isGraded);
     } else if (condition === "Graded") {
@@ -366,15 +455,20 @@ export async function POST(req: Request) {
       });
     }
 
-    // ---- Compute USD stats ----
+    // ---- Compute USD stats, then apply multiplier (only if cascade fired) ----
     const prices = filtered.map((li) => li.priceUSD);
-    const medianUSD = medianOf(prices);
-    const lowUSD = Math.min(...prices);
-    const highUSD = Math.max(...prices);
+    const baseMedianUSD = medianOf(prices);
+    const baseLowUSD = Math.min(...prices);
+    const baseHighUSD = Math.max(...prices);
+    const medianUSD = baseMedianUSD * multiplier;
+    const lowUSD = baseLowUSD * multiplier;
+    const highUSD = baseHighUSD * multiplier;
 
-    // ---- Sanity check ----
+    // ---- Sanity check on the FINAL (post-multiplier) USD median ----
     if (medianUSD < 1 || medianUSD > 10000) {
-      console.log(`[get-comps] needsManualEntry — implausible medianUSD=${medianUSD}`);
+      console.log(
+        `[get-comps] needsManualEntry — implausible medianUSD=${medianUSD} (cascade=${cascadeUsed}, multiplier=${multiplier})`,
+      );
       return NextResponse.json({
         needsManualEntry: true,
         reason: "Implausible USD median, manual review required",
@@ -389,8 +483,22 @@ export async function POST(req: Request) {
     const highMYR = Math.round(highUSD * USD_MYR);
 
     console.log(
-      `[get-comps] computed: medianUSD=${medianUSD.toFixed(2)}, medianMYR=${medianMYR}, range=[${lowMYR}, ${highMYR}], n=${filtered.length}`,
+      `[get-comps] computed: medianUSD=${medianUSD.toFixed(2)}, medianMYR=${medianMYR}, range=[${lowMYR}, ${highMYR}], n=${filtered.length}, cascadeUsed=${cascadeUsed}, totalElapsed=${Date.now() - t0}ms`,
     );
+
+    // ---- Source / operatorNote / confidence depend on whether we cascaded ----
+    const source = cascadeUsed
+      ? `estimated (NM × ${multiplier} — raw ${condition} comps thin on eBay, n=${nmCount})`
+      : `eBay sold (live, n=${filtered.length})`;
+
+    const cascadeNote = cascadeUsed
+      ? ` | Computed from NM cluster (n=${nmCount}) × ${multiplier} adjustment for ${condition} condition. Industry-standard discount tier.`
+      : "";
+
+    const operatorNote =
+      (parsed?.diagnosticNote ?? "")
+      + (parsed?.variantWarning ? " | " + parsed.variantWarning : "")
+      + cascadeNote;
 
     return NextResponse.json({
       needsManualEntry: false,
@@ -400,12 +508,16 @@ export async function POST(req: Request) {
       medianUSD,
       n: filtered.length,
       trend: "Stable",
-      source: `eBay sold (live, n=${filtered.length})`,
-      operatorNote: parsed.diagnosticNote + (parsed.variantWarning ? " | " + parsed.variantWarning : ""),
+      source,
+      operatorNote,
       ebayVerifyUrl,
       rawListingsForAudit: filtered,
+      confidence: cascadeUsed ? "low" : "high",
+      cascadeUsed,
     });
   } catch (err) {
+    // Defensive net — searchConditionListings catches its own errors, so this
+    // only fires for unforeseen issues in the post-fetch pipeline.
     console.error("[get-comps] error:", err);
     console.error(`[get-comps] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
