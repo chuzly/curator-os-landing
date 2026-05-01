@@ -3614,6 +3614,21 @@
         toastTimer = setTimeout(() => { t.remove(); toastTimer = null; }, 2200);
       }
 
+      // iOS Safari bfcache: when user taps eBay button and returns to this tab,
+      // Safari restores the page from cache without re-running JS. Force re-sync
+      // of UI elements that depend on state (currently just the eBay button).
+      window.addEventListener("pageshow", (e) => {
+        // e.persisted === true means page was restored from bfcache.
+        // We re-sync regardless to be safe — it's idempotent and cheap.
+        const ebayBtn = document.querySelector(".ebay-verify-btn");
+        if (ebayBtn) {
+          if (state && state.comps && state.comps.ebayVerifyUrl) {
+            ebayBtn.href = state.comps.ebayVerifyUrl;
+            ebayBtn.dataset.state = "visible";
+          }
+        }
+      });
+
       // ============================================================
       // INITIAL SETUP
       // ============================================================
