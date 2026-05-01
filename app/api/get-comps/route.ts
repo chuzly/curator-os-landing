@@ -22,6 +22,10 @@ type CompsResult = {
   risks: string[];
   conditionAdjustment: string;
   operatorNote: string;
+  // Server-built after validateComps() — Claude's response does not contain
+  // this field, so validateComps() does NOT check for it. We spread it onto
+  // the JSON response just before returning to the client.
+  ebayVerifyUrl: string;
 };
 
 const SYSTEM_PROMPT = `You are a Pokemon TCG sold comp researcher. Given a card and condition, return sold comp data in MYR (Malaysian Ringgit).
@@ -188,7 +192,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
 
-    return NextResponse.json(parsed);
+    // Build the eBay sold-listings verification URL from the request payload.
+    // 183454 = Pokemon TCG Individual Cards category; LH_Sold=1 + LH_Complete=1 = sold listings only.
+    const set = (body.set ?? "").trim();
+    const cardNumber = (body.cardNumber ?? "").trim();
+    console.log("[get-comps] eBay URL inputs:", { cardName, set, cardNumber });
+    const queryParts = [cardName, set, cardNumber].filter(Boolean);
+    const queryString = queryParts.join(" ").trim();
+    const ebayQuery = encodeURIComponent(queryString);
+    const ebayVerifyUrl = `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60`;
+
+    return NextResponse.json({ ...parsed, ebayVerifyUrl });
   } catch (err) {
     console.error("[get-comps] error:", err);
     console.error(`[get-comps] failed after ${Date.now() - t0}ms`);

@@ -396,6 +396,30 @@
     .b-medium { color: #d97706; }
     .b-high { color: #F09595; }
 
+    /* eBay verification button — appears below the Sold range source line when get-comps returns a URL */
+    .ebay-verify-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 12px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .ebay-verify-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .ebay-verify-btn[data-state="hidden"] { display: none; }
+    .ebay-logo {
+      height: 22px;
+      width: auto;
+      display: block;
+    }
+
     .pill-row {
       display: flex; gap: 8px;
     }
@@ -964,6 +988,13 @@
             <div data-tile-view>
               <div id="cRange" class="metric-value">RM — – —</div>
               <div id="cSource" class="metric-sub" style="visibility:hidden;">source: —</div>
+              <a class="ebay-verify-btn" href="" target="_blank" rel="noopener noreferrer" data-state="hidden" aria-label="Verify on eBay sold listings">
+                <svg class="ebay-logo" viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <text x="0" y="30" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-style="italic" font-size="36">
+                    <tspan fill="#E53238">e</tspan><tspan fill="#0064D2">b</tspan><tspan fill="#F5AF02">a</tspan><tspan fill="#86B817">y</tspan>
+                  </text>
+                </svg>
+              </a>
             </div>
             <div data-tile-edit hidden>
               <div class="tile-edit-row">
@@ -1825,6 +1856,14 @@
         els.vAsking.value = "";
         ["pA","pB","pC","pD","pAExp","pBExp","pCExp","pDExp"].forEach(id => { els[id].value = ""; });
 
+        // Clear eBay verify button (defensive — also auto-hides via tile flip but
+        // wiping href + state prevents stale URL from leaking across demos).
+        const ebayBtn = document.querySelector(".ebay-verify-btn");
+        if (ebayBtn) {
+          ebayBtn.href = "";
+          ebayBtn.dataset.state = "hidden";
+        }
+
         // Clear customer form
         els.cName.value = "";
         els.cInsta.value = "";
@@ -2025,6 +2064,14 @@
         showScreen("verdict");
         setCompsState("loading");
 
+        // Reset eBay verify button before fetch — it will only become visible
+        // again if the success branch receives a non-empty data.ebayVerifyUrl.
+        const ebayBtn = document.querySelector(".ebay-verify-btn");
+        if (ebayBtn) {
+          ebayBtn.href = "";
+          ebayBtn.dataset.state = "hidden";
+        }
+
         try {
           const res = await fetch("/api/get-comps", {
             method: "POST",
@@ -2065,6 +2112,11 @@
             state.comps.conditionAdjustment = data.conditionAdjustment || "";
             state.comps.operatorNote = data.operatorNote || "";
             state.comps.trend = "Stable"; // API doesn't return trend; default neutral
+            // Surface the server-built eBay verify URL on the button.
+            if (ebayBtn && data.ebayVerifyUrl) {
+              ebayBtn.href = data.ebayVerifyUrl;
+              ebayBtn.dataset.state = "visible";
+            }
           }
         } catch (err) {
           console.error("[get-comps] error:", err);
