@@ -3631,6 +3631,35 @@
         }
       });
 
+      // DEBUG: live update overlay every 500ms
+      setInterval(() => {
+        const btn = document.querySelector(".ebay-verify-btn");
+        const urlEl = document.getElementById("debugUrl");
+        const stateEl = document.getElementById("debugBtnState");
+        const existsEl = document.getElementById("debugBtnExists");
+        if (urlEl) urlEl.textContent = (state && state.comps && state.comps.ebayVerifyUrl) || "(null)";
+        if (stateEl) stateEl.textContent = btn ? btn.dataset.state : "(no button)";
+        if (existsEl) existsEl.textContent = btn ? "YES" : "NO";
+      }, 500);
+
+      // DEBUG: log key events
+      window.addEventListener("pageshow", () => {
+        const el = document.getElementById("debugLastEvent");
+        if (el) el.textContent = "pageshow @ " + new Date().toISOString().slice(11,19);
+      });
+      window.addEventListener("pagehide", () => {
+        const el = document.getElementById("debugLastEvent");
+        if (el) el.textContent = "pagehide @ " + new Date().toISOString().slice(11,19);
+      });
+      window.addEventListener("focus", () => {
+        const el = document.getElementById("debugLastEvent");
+        if (el) el.textContent = "focus @ " + new Date().toISOString().slice(11,19);
+      });
+      window.addEventListener("visibilitychange", () => {
+        const el = document.getElementById("debugLastEvent");
+        if (el) el.textContent = "visibility=" + document.visibilityState + " @ " + new Date().toISOString().slice(11,19);
+      });
+
       // ============================================================
       // INITIAL SETUP
       // ============================================================
@@ -3639,5 +3668,16 @@
       setCompsState("idle");
     })();
   </script>
+
+  <div id="debugOverlay" style="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:99999;max-height:200px;overflow:auto;border-top:1px solid #0f0;">
+    <div>DEBUG OVERLAY — state.comps.ebayVerifyUrl:</div>
+    <div id="debugUrl">—</div>
+    <div>Button data-state:</div>
+    <div id="debugBtnState">—</div>
+    <div>Button in DOM:</div>
+    <div id="debugBtnExists">—</div>
+    <div>Last event:</div>
+    <div id="debugLastEvent">page load</div>
+  </div>
 </body>
 </html>
