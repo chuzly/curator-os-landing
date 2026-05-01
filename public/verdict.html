@@ -474,7 +474,10 @@
     }
 
     .metric-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      contain: layout;
     }
     .metric {
       background: #0f1e34;
@@ -482,6 +485,8 @@
       padding: 12px 16px;
       display: flex; flex-direction: column; gap: 5px; min-height: 86px;
       justify-content: center;
+      min-width: 0;
+      overflow: hidden;
     }
     .metric-label {
       font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
@@ -3614,6 +3619,14 @@
           if (state && state.comps && state.comps.ebayVerifyUrl) {
             ebayBtn.dataset.state = "visible";
           }
+        }
+        // Force layout reflow on .metric-grid — iPad Safari corrupts CSS Grid
+        // after bfcache restore, causing tiles to expand horizontally.
+        const metricGrid = document.querySelector(".metric-grid");
+        if (metricGrid) {
+          metricGrid.style.display = "none";
+          void metricGrid.offsetHeight; // trigger reflow
+          metricGrid.style.display = "";
         }
       });
 
