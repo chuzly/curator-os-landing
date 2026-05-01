@@ -3298,8 +3298,22 @@
       els.mManLow.addEventListener("input", () => { state.comps.rangeLow = num(els.mManLow); renderVerdictView(); });
       els.mManHigh.addEventListener("input", () => { state.comps.rangeHigh = num(els.mManHigh); renderVerdictView(); });
       els.mManN.addEventListener("input", () => { state.comps.n = num(els.mManN); renderVerdictView(); });
-      els.mManReprint.addEventListener("change", () => { state.comps.reprintRisk = els.mManReprint.value; renderVerdictView(); });
-      els.mManTrend.addEventListener("change", () => { state.comps.trend = els.mManTrend.value; renderVerdictView(); });
+      els.mManReprint.addEventListener("change", () => {
+        state.comps.reprintRisk = els.mManReprint.value;
+        // Reprint change invalidates auto-generated Pillar A narrative.
+        state.pillarReasonOverridden.delete("A");
+        els.pAExp.value = "";
+        renderVerdictView();
+      });
+      els.mManTrend.addEventListener("change", () => {
+        state.comps.trend = els.mManTrend.value;
+        // Trend change invalidates auto-generated Pillar A AND Pillar B narratives.
+        state.pillarReasonOverridden.delete("A");
+        state.pillarReasonOverridden.delete("B");
+        els.pAExp.value = "";
+        els.pBExp.value = "";
+        renderVerdictView();
+      });
       els.mManNote.addEventListener("input", () => { state.comps.operatorNote = els.mManNote.value; renderVerdictView(); });
 
       // Tap-to-edit helpers: in auto mode, tapping a tile flips it to edit mode
