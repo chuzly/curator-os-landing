@@ -1,8 +1,9 @@
-// Sonnet 4.6 — reverted from Haiku 4.5 for identification accuracy diagnostic.
-// Hypothesis: Haiku may drop variant/set/number detail on niche cards (Asia Promos, recent releases),
-// causing get-comps to fetch prices for wrong variant. Sonnet has stronger vision reasoning.
-// If identification quality matches Haiku exactly across 3+ test cards, revert back to Haiku for cost/speed
-// (claude-haiku-4-5-20251001). If Sonnet ID is meaningfully more accurate, keep Sonnet here.
+// Opus 4.7 — escalated from Sonnet 4.6 for identification accuracy diagnostic.
+// Hypothesis: Sonnet hallucinated "Cosmic Eclipse" for Unbroken Bonds Gardevoir & Sylveon,
+// "Paradox Rift" for Prismatic Evolutions Pikachu ex 179/131 PRE. Testing if Opus reasoning
+// improves recent-set disambiguation.
+// If Opus matches Sonnet exactly across 3+ test cards, revert to Sonnet for cost (claude-sonnet-4-6).
+// If Opus is meaningfully more accurate on set names, keep Opus despite 5x cost over Sonnet, ~25x over Haiku.
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -79,8 +80,8 @@ export async function POST(req: Request) {
   try {
     const response = await client.messages.create(
       {
-        model: "claude-sonnet-4-6",
-        max_tokens: 1024,
+        model: "claude-opus-4-7",
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [
           {
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
           format: { type: "json_schema", schema: cardSchema },
         },
       },
-      { timeout: 45_000 },
+      { timeout: 55_000 },
     );
 
     console.log(
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
     console.error("[identify-card] error:", err);
     console.error(`[identify-card] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      console.error("[identify-card] timeout after 45s");
+      console.error("[identify-card] timeout after 55s");
       return NextResponse.json({ error: "identification_failed" }, { status: 502 });
     }
     if (err instanceof Anthropic.APIError) {
