@@ -137,16 +137,32 @@ export async function POST(req: Request) {
   let payload: unknown;
   try {
     payload = await req.json();
-  } catch {
+  } catch (err) {
+    console.error("[capture-signup] error: invalid JSON body:", err);
     return NextResponse.json({ error: "invalid_json", success: false }, { status: 400 });
   }
 
+  console.log(
+    "[capture-signup] starting, payload keys:",
+    payload && typeof payload === "object" ? Object.keys(payload) : "(non-object)",
+  );
+
   if (!isValid(payload)) {
+    console.error("[capture-signup] error: payload failed isValid() — missing required fields or wrong shape");
     return NextResponse.json(
       { error: "missing_required_fields", success: false },
       { status: 400 },
     );
   }
+
+  console.log("[capture-signup] body validated, signup data:", {
+    name: payload.customer.name,
+    email: payload.customer.email ? payload.customer.email.slice(0, 3) + "..." : null,
+    whatsapp: payload.customer.whatsapp ? payload.customer.whatsapp.slice(0, 3) + "..." : null,
+    userType: payload.customer.userType,
+    cardName: payload.card.cardName,
+    verdict: payload.verdict.tier,
+  });
 
   // Signup number — last 6 digits of Date.now() until Sheets-backed counter is wired.
   // TODO: replace with Google Sheets auto-increment once Sheets API is integrated.
@@ -168,6 +184,8 @@ export async function POST(req: Request) {
   const { text, html } = buildBody(payload, signupNumber);
   const subject = `SEASCC signup #${signupNumber} — ${payload.customer.name} · ${payload.verdict.tier} ${payload.card.cardName}`;
 
+  console.log("[capture-signup] calling Resend with from:", fromEmail, "to:", notifyEmail);
+
   try {
     const result = await resend.emails.send({
       from: fromEmail,
@@ -177,6 +195,7 @@ export async function POST(req: Request) {
       text,
       html,
     });
+    console.log("[capture-signup] Resend response:", result);
     if (result?.error) {
       console.error("[capture-signup] resend error:", result.error);
       return NextResponse.json(
@@ -185,6 +204,7 @@ export async function POST(req: Request) {
       );
     }
   } catch (err) {
+    console.error("[capture-signup] error:", err);
     console.error("[capture-signup] resend threw:", err);
     return NextResponse.json(
       { error: "signup_send_failed", success: false },
@@ -196,5 +216,6 @@ export async function POST(req: Request) {
   // (GOOGLE_SHEETS_CLIENT_EMAIL / GOOGLE_SHEETS_PRIVATE_KEY / SHEET_ID) and use
   // the Sheets v4 batchUpdate to append a row with the same fields as buildBody().
 
+  console.log("[capture-signup] returning success, signupNumber:", signupNumber);
   return NextResponse.json({ signupNumber, success: true });
 }
