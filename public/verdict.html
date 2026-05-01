@@ -1395,13 +1395,13 @@
             <div data-tile-view>
               <div id="cRange" class="metric-value">RM — – —</div>
               <div id="cSource" class="metric-sub" style="visibility:hidden;">source: —</div>
-              <a class="ebay-verify-btn" href="" target="_blank" rel="noopener noreferrer" data-state="hidden" aria-label="Verify on eBay sold listings">
+              <button type="button" class="ebay-verify-btn" data-state="hidden" aria-label="Verify on eBay sold listings">
                 <svg class="ebay-logo" viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <text x="0" y="30" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-style="italic" font-size="36">
                     <tspan fill="#E53238">e</tspan><tspan fill="#0064D2">b</tspan><tspan fill="#F5AF02">a</tspan><tspan fill="#86B817">y</tspan>
                   </text>
                 </svg>
-              </a>
+              </button>
             </div>
             <div data-tile-edit hidden>
               <div class="tile-edit-row">
@@ -2482,10 +2482,8 @@
         const ebayBtnRender = document.querySelector(".ebay-verify-btn");
         if (ebayBtnRender) {
           if (state.comps.ebayVerifyUrl) {
-            ebayBtnRender.href = state.comps.ebayVerifyUrl;
             ebayBtnRender.dataset.state = "visible";
           } else {
-            ebayBtnRender.href = "";
             ebayBtnRender.dataset.state = "hidden";
           }
         }
@@ -2562,7 +2560,6 @@
         state.comps.ebayVerifyUrl = null;
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn) {
-          ebayBtn.href = "";
           ebayBtn.dataset.state = "hidden";
         }
 
@@ -2675,7 +2672,6 @@
         }
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn && m.ebayVerifyUrl) {
-          ebayBtn.href = m.ebayVerifyUrl;
           ebayBtn.dataset.state = "visible";
         }
 
@@ -2922,7 +2918,6 @@
         // Reset eBay verify button before fetch — gets re-set below if URL returned.
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn) {
-          ebayBtn.href = "";
           ebayBtn.dataset.state = "hidden";
         }
 
@@ -2961,7 +2956,6 @@
             const data = await res.json();
             // eBay verify URL ships on both response shapes — set unconditionally if present.
             if (ebayBtn && data.ebayVerifyUrl) {
-              ebayBtn.href = data.ebayVerifyUrl;
               ebayBtn.dataset.state = "visible";
             }
 
@@ -3113,7 +3107,6 @@
 
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn) {
-          ebayBtn.href = "";
           ebayBtn.dataset.state = "hidden";
         }
 
@@ -3623,9 +3616,18 @@
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn) {
           if (state && state.comps && state.comps.ebayVerifyUrl) {
-            ebayBtn.href = state.comps.ebayVerifyUrl;
             ebayBtn.dataset.state = "visible";
           }
+        }
+      });
+
+      // eBay verify button click handler — read URL from state at click time
+      // (not from DOM) so iPad Safari bfcache cannot serve a stale URL.
+      // The button has no href attribute; navigation happens via window.open here.
+      document.querySelector(".ebay-verify-btn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (state && state.comps && state.comps.ebayVerifyUrl) {
+          window.open(state.comps.ebayVerifyUrl, "_blank", "noopener,noreferrer");
         }
       });
 
