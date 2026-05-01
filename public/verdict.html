@@ -3630,10 +3630,12 @@
         }
       });
 
-      // eBay verify button click handler — read URL from state at click time
-      // (not from DOM) so iPad Safari bfcache cannot serve a stale URL.
-      // The button has no href attribute; navigation happens via window.open here.
-      document.querySelector(".ebay-verify-btn")?.addEventListener("click", (e) => {
+      // eBay verify button click handler — event delegation on document so it fires
+      // regardless of when the button is added to DOM. Reads URL from state at click
+      // time so iPad Safari bfcache cannot serve a stale URL. Button has no href.
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".ebay-verify-btn");
+        if (!btn) return;
         e.preventDefault();
         if (state && state.comps && state.comps.ebayVerifyUrl) {
           window.open(state.comps.ebayVerifyUrl, "_blank", "noopener,noreferrer");
