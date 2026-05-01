@@ -745,6 +745,21 @@
       border: 1px solid rgba(93, 202, 165, 0.3);
       background: rgba(10, 22, 40, 0.6);
     }
+    /* Defensive: lock everything inside the fundamentals panel as read-only display.
+       Prevents iPad Safari from offering inline edit on tap. Anchors keep pointer cursor. */
+    .fundamentals-panel,
+    .fundamentals-panel * {
+      cursor: default;
+    }
+    .fundamentals-panel a { cursor: pointer; }
+    .fundamentals-panel li,
+    .fundamentals-panel p,
+    .fundamentals-panel .fund-pillar-name,
+    .fundamentals-panel .fund-pillar-score,
+    .fundamentals-panel .fundamentals-loading-status {
+      -webkit-user-modify: read-only;
+      user-modify: read-only;
+    }
     .fundamentals-loading {
       text-align: center;
       padding: 48px 24px;
@@ -1452,7 +1467,7 @@
           <div class="fundamentals-content" hidden>
             <div class="fundamentals-thesis-block">
               <div class="label">THESIS</div>
-              <p id="fundThesis"></p>
+              <p id="fundThesis" contenteditable="false"></p>
             </div>
 
             <div class="fundamentals-pillars">
@@ -1494,7 +1509,7 @@
             </div>
 
             <div class="fundamentals-verdict-narrative">
-              <p id="fundVerdictNarrative"></p>
+              <p id="fundVerdictNarrative" contenteditable="false"></p>
             </div>
           </div>
         </section>
@@ -1666,7 +1681,7 @@
             trend: "Stable",
             source: "eBay sold (prepared card, n=8)",
             operatorNote: "Recent eBay sold cluster $40-65 USD raw NM, converted to RM 188-305. Median RM 230 reflects 8 sold listings over 30 days.",
-            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Gardevoir%20Sylveon%20GX%20Unbroken%20Bonds%20130%2F214&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60",
+            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Gardevoir%20Sylveon%20GX%20Unbroken%20Bonds%20130%2F214&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60&_fcid=1&_stpos=10001",
             rawListingsForAudit: [
               { priceUSD: 40, title: "Gardevoir & Sylveon GX 130/214 NM Tag Team", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-30", url: "https://www.ebay.com/itm/example1", soldFormat: "auction", shippingNotes: null },
               { priceUSD: 51, title: "Pokemon Gardevoir & Sylveon GX 130/214 Sun & Moon Unbroken Bonds NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-27", url: "https://www.ebay.com/itm/example2", soldFormat: "auction", shippingNotes: null },
@@ -1699,7 +1714,7 @@
             trend: "Up",
             source: "operator-verified (Shiny App, prepared card)",
             operatorNote: "Promo distribution limited to McDonald's Asia 2021 campaign. Shiny App shows median RM 47, range RM 38-65 across 12 recent sales. Trend slightly upward.",
-            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Riolu%20McDonald%20MEP%20010%20Full%20Art&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60",
+            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Riolu%20McDonald%20MEP%20010%20Full%20Art&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60&_fcid=1&_stpos=10001",
             rawListingsForAudit: [
               { priceUSD: 8, title: "Riolu 010/MEP Pokemon McDonald's Promo Full Art NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-29", url: "https://www.ebay.com/itm/riolu1", soldFormat: "auction", shippingNotes: null },
               { priceUSD: 11, title: "Pokemon Riolu Full Art Promo McDonald's Match Battle 010", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-22", url: "https://www.ebay.com/itm/riolu2", soldFormat: "buy_it_now", shippingNotes: null },
@@ -1732,7 +1747,7 @@
             trend: "Up",
             source: "eBay sold (prepared card, n=22)",
             operatorNote: "Active chase card from Prismatic Evolutions. eBay sold cluster $120-200 USD raw NM, median ~$160. 22 listings over 30 days, trending upward as set winds down printing.",
-            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Pikachu%20ex%20Prismatic%20Evolutions%20179%2F131%20Gold&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60",
+            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Pikachu%20ex%20Prismatic%20Evolutions%20179%2F131%20Gold&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60&_fcid=1&_stpos=10001",
             rawListingsForAudit: [
               { priceUSD: 145, title: "Pikachu ex 179/131 Hyper Rare Gold Prismatic Evolutions NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-30", url: "https://www.ebay.com/itm/pika1", soldFormat: "auction", shippingNotes: null },
               { priceUSD: 168, title: "Pokemon Pikachu ex Gold Hyper Rare 179/131 Prismatic Evolutions", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-28", url: "https://www.ebay.com/itm/pika2", soldFormat: "buy_it_now", shippingNotes: null },
@@ -3165,7 +3180,7 @@
             if (scoreEl) scoreEl.textContent = `${score} / ${max}`;
             if (reasonsEl) {
               reasonsEl.innerHTML = (pillar.reasons || [])
-                .map((r) => `<li>${escapeAttr(r)}</li>`).join("");
+                .map((r) => `<li contenteditable="false">${escapeAttr(r)}</li>`).join("");
             }
           };
           renderPillar("scarcity", 40);
@@ -3175,9 +3190,9 @@
         }
 
         document.getElementById("fundRisks").innerHTML =
-          (state.fundamentals.risks || []).map((r) => `<li>${escapeAttr(r)}</li>`).join("");
+          (state.fundamentals.risks || []).map((r) => `<li contenteditable="false">${escapeAttr(r)}</li>`).join("");
         document.getElementById("fundCatalysts").innerHTML =
-          (state.fundamentals.catalysts || []).map((c) => `<li>${escapeAttr(c)}</li>`).join("");
+          (state.fundamentals.catalysts || []).map((c) => `<li contenteditable="false">${escapeAttr(c)}</li>`).join("");
         document.getElementById("fundVerdictNarrative").textContent =
           state.fundamentals.verdictNarrative || "";
       }
