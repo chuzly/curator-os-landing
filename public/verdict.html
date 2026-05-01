@@ -2415,6 +2415,21 @@
         // Apply pillar defaults
         applyPillarDefaults();
 
+        // Read-only lockdown for prose inputs (Patch 11):
+        // - mManNote: editable only in full manual mode. Defense in depth alongside the
+        //   click-handler guard below that blocks the tile flip from customer taps.
+        // - Pillar reason inputs: editable only when operator has explicitly enabled
+        //   override on that pillar (single tap on the input, see click handler below).
+        if (els.mManNote) {
+          els.mManNote.readOnly = !state.compsManual;
+        }
+        for (const letter of ["A", "B", "C", "D"]) {
+          const fieldId = pillarReasonByLetter[letter];
+          if (els[fieldId]) {
+            els[fieldId].readOnly = !state.pillarReasonOverridden.has(letter);
+          }
+        }
+
         // Composite
         const a = num(els.pA) ?? 0;
         const b = num(els.pB) ?? 0;
@@ -3327,6 +3342,10 @@
 
       els.opNote.addEventListener("click", (e) => {
         if (e.target.closest("[data-note-edit]")) return;
+        // Patch 11: in auto mode, customer taps must not flip the tile (no visual
+        // flicker, no textarea reveal). Operator must enter full manual mode to
+        // edit the operator note. The mManNote.readOnly toggle is defense in depth.
+        if (!state.compsManual) return;
         startTileEdit("opNote", els.mManNote);
       });
 
@@ -3344,6 +3363,24 @@
           renderVerdictView();
         });
       });
+
+      // Patch 11: pillar reason inputs are readOnly until override is enabled.
+      // Single tap on a pillar reason input flips it into override mode (adds the
+      // letter to pillarReasonOverridden, clears the dim default style, removes
+      // readOnly, focuses) so the operator can immediately type. Without this, the
+      // readOnly toggle would create a chicken-and-egg — input event can't fire on
+      // a readOnly field, so override could never be set.
+      for (const fieldId of Object.keys(pillarReasonByField)) {
+        if (!els[fieldId]) continue;
+        els[fieldId].addEventListener("click", () => {
+          const letter = pillarReasonByField[fieldId];
+          if (state.pillarReasonOverridden.has(letter)) return;
+          state.pillarReasonOverridden.add(letter);
+          els[fieldId].classList.remove("is-default");
+          els[fieldId].readOnly = false;
+          els[fieldId].focus();
+        });
+      }
 
       // Educator toggle
       els.eduToggle.addEventListener("click", () => {
