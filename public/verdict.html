@@ -690,6 +690,103 @@
       line-height: 1.5;
     }
 
+    /* Operator review interstitial — gates between API success and customer-facing verdict */
+    .op-review-card {
+      max-width: 640px;
+      background: #0a1628;
+      border: 1px solid #5DCAA5;
+      padding: 24px;
+    }
+    .op-review-header {
+      font-size: 11px; letter-spacing: 0.20em; text-transform: uppercase;
+      color: #d97706; font-weight: 700; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .op-review-tagline {
+      font-size: 13px; color: rgba(255,255,255,0.70);
+      margin: 0 0 12px 0;
+    }
+    .op-review-stats {
+      margin: 0 0 14px 0; padding: 0;
+      display: grid; grid-template-columns: 90px 1fr;
+      gap: 4px 16px; align-items: baseline;
+    }
+    .op-review-stats dt {
+      font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase;
+      color: rgba(255,255,255,0.50); font-weight: 600;
+    }
+    .op-review-stats dd {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 14px; color: #fff;
+    }
+    .op-review-diagnostic {
+      font-size: 12px; color: rgba(255,255,255,0.85);
+      background: rgba(217, 119, 6, 0.08);
+      border-left: 2px solid #d97706;
+      padding: 8px 12px; margin: 0 0 14px 0;
+      font-style: italic; line-height: 1.45;
+    }
+    .op-review-diagnostic .label {
+      font-style: normal; font-weight: 600; color: #d97706;
+      margin-right: 6px;
+    }
+    .op-review-toggle {
+      background: transparent; border: 0;
+      color: rgba(255,255,255,0.65); font-family: inherit;
+      font-size: 12px; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 3px;
+      padding: 6px 0; margin: 0 0 8px 0;
+    }
+    .op-review-toggle:hover { color: #fff; }
+    .op-review-listings {
+      max-height: 200px; overflow-y: auto;
+      background: rgba(0, 0, 0, 0.20);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 10px; margin: 0 0 14px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; color: rgba(255, 255, 255, 0.85);
+      line-height: 1.45;
+    }
+    .op-review-listing {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .op-review-listing:last-child { border-bottom: 0; }
+    .op-review-listing .price { color: #5DCAA5; font-weight: 600; }
+    .op-review-listing .grade {
+      color: #d97706; font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .op-review-listing a {
+      color: rgba(255, 255, 255, 0.50); text-decoration: none;
+      margin-left: 6px;
+    }
+    .op-review-listing a:hover { color: #5DCAA5; text-decoration: underline; }
+    .op-review-actions {
+      display: flex; flex-direction: column; gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.10);
+    }
+    .op-review-btn {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.04em;
+      border: 1px solid currentColor;
+      background: transparent; cursor: pointer;
+      border-radius: 0; font-family: inherit;
+      transition: background 0.15s;
+    }
+    .op-review-btn.primary {
+      color: #0a1628; background: #5DCAA5; border-color: #5DCAA5;
+    }
+    .op-review-btn.primary:hover { background: #6FD7B2; border-color: #6FD7B2; }
+    .op-review-btn.secondary { color: #d97706; }
+    .op-review-btn.secondary:hover { background: rgba(217, 119, 6, 0.10); }
+    .op-review-btn.tertiary { color: #F09595; }
+    .op-review-btn.tertiary:hover { background: rgba(240, 149, 149, 0.10); }
+
     /* Capture form fields */
     .form-field { margin-bottom: 14px; }
     .radio-group {
@@ -1210,6 +1307,35 @@
     </div>
   </div>
 
+  <!-- =========== MODAL: Operator review (gates between API success and verdict) =========== -->
+  <div class="modal-overlay" data-modal="operator-review">
+    <div class="modal-card op-review-card">
+      <div class="op-review-header">[ OPERATOR REVIEW — not shown to customer ]</div>
+
+      <p class="op-review-tagline">Layer 2 returned:</p>
+      <dl class="op-review-stats">
+        <dt>Median</dt><dd id="orMedian">RM —</dd>
+        <dt>Range</dt><dd id="orRange">RM — – —</dd>
+        <dt>Source</dt><dd id="orSource">—</dd>
+        <dt>n</dt><dd id="orN">— listings used</dd>
+      </dl>
+
+      <div class="op-review-diagnostic">
+        <span class="label">Diagnostic:</span>
+        <span id="orDiagnostic">—</span>
+      </div>
+
+      <button id="orToggleListings" class="op-review-toggle" type="button">View raw listings ↓</button>
+      <div id="orListings" class="op-review-listings" hidden></div>
+
+      <div class="op-review-actions">
+        <button id="orLooksRight" class="op-review-btn primary" type="button">✓ Looks right — show customer</button>
+        <button id="orOverride"   class="op-review-btn secondary" type="button">✎ Override with my Shiny check</button>
+        <button id="orCancel"     class="op-review-btn tertiary" type="button">✗ Cancel — back to condition</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       "use strict";
@@ -1240,6 +1366,8 @@
           source: "", reprintRisk: "Low", reprintReason: "",
           catalysts: [], risks: [], conditionAdjustment: "",
           operatorNote: "", trend: "Stable",
+          medianUSD: null,            // backend-supplied (live mode only)
+          rawListingsForAudit: [],    // backend-supplied (live mode only) — populates the operator-review interstitial
         },
 
         asking: null,
@@ -1361,6 +1489,18 @@
         resetYes: $("#resetYes"),
         resetCancel: $("#resetCancel"),
         preparedClose: $("#preparedClose"),
+
+        // Operator review interstitial (Patch 2)
+        orMedian: $("#orMedian"),
+        orRange: $("#orRange"),
+        orSource: $("#orSource"),
+        orN: $("#orN"),
+        orDiagnostic: $("#orDiagnostic"),
+        orToggleListings: $("#orToggleListings"),
+        orListings: $("#orListings"),
+        orLooksRight: $("#orLooksRight"),
+        orOverride: $("#orOverride"),
+        orCancel: $("#orCancel"),
       };
 
       // ============================================================
@@ -1832,6 +1972,8 @@
           source: "", reprintRisk: "Low", reprintReason: "",
           catalysts: [], risks: [], conditionAdjustment: "",
           operatorNote: "", trend: "Stable",
+          medianUSD: null,
+          rawListingsForAudit: [],
         };
 
         state.asking = null;
@@ -2060,17 +2202,44 @@
       // ============================================================
       // EVENT HANDLERS — Verdict (Screen 3)
       // ============================================================
+      // Run the post-decision transition: flip verdict screen to result,
+      // reset overrides, sync manual inputs to current state.comps, render,
+      // focus asking. Used by all three terminal paths (manual mode, "Looks
+      // right", and "Override" from the operator-review interstitial).
+      function transitionToVerdictResult() {
+        setCompsState("result");
+        state.asking = null;
+        state.pillarOverridden.clear();
+        state.pillarReasonOverridden.clear();
+        state.tileOverrides.clear();
+        state.lastTier = null;
+        els.vAsking.value = "";
+        els.mManMedian.value = state.comps.median ?? "";
+        els.mManLow.value = state.comps.rangeLow ?? "";
+        els.mManHigh.value = state.comps.rangeHigh ?? "";
+        els.mManN.value = state.comps.n ?? "";
+        els.mManReprint.value = state.comps.reprintRisk || "Low";
+        els.mManTrend.value = state.comps.trend || "Stable";
+        els.mManNote.value = state.comps.operatorNote || "";
+        renderVerdictView();
+        setTimeout(() => els.vAsking.focus(), 50);
+      }
+
       async function fetchComps() {
         showScreen("verdict");
         setCompsState("loading");
 
-        // Reset eBay verify button before fetch — it will only become visible
-        // again if the success branch receives a non-empty data.ebayVerifyUrl.
+        // Reset eBay verify button before fetch — gets re-set below if URL returned.
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn) {
           ebayBtn.href = "";
           ebayBtn.dataset.state = "hidden";
         }
+
+        // When non-null, holds the API success response and signals we should
+        // route through the operator-review interstitial instead of rendering
+        // the verdict immediately.
+        let dataForReview = null;
 
         try {
           const res = await fetch("/api/get-comps", {
@@ -2088,7 +2257,6 @@
           if (!res.ok) {
             console.warn("[get-comps] non-OK:", res.status);
             state.compsManual = true;
-            // Empty comps; operator types manually
             state.comps.median = null;
             state.comps.rangeLow = null;
             state.comps.rangeHigh = null;
@@ -2097,54 +2265,162 @@
             state.comps.trend = "Stable";
             state.comps.operatorNote = "";
             state.comps.source = "";
+            state.comps.medianUSD = null;
+            state.comps.rawListingsForAudit = [];
           } else {
             const data = await res.json();
-            state.compsManual = false;
-            state.comps.median = data.median ?? null;
-            state.comps.rangeLow = data.rangeLow ?? null;
-            state.comps.rangeHigh = data.rangeHigh ?? null;
-            state.comps.n = data.n ?? null;
-            state.comps.source = data.source || "";
-            state.comps.reprintRisk = data.reprintRisk || "Low";
-            state.comps.reprintReason = data.reprintReason || "";
-            state.comps.catalysts = Array.isArray(data.catalysts) ? data.catalysts : [];
-            state.comps.risks = Array.isArray(data.risks) ? data.risks : [];
-            state.comps.conditionAdjustment = data.conditionAdjustment || "";
-            state.comps.operatorNote = data.operatorNote || "";
-            state.comps.trend = "Stable"; // API doesn't return trend; default neutral
-            // Surface the server-built eBay verify URL on the button.
+            // eBay verify URL ships on both response shapes — set unconditionally if present.
             if (ebayBtn && data.ebayVerifyUrl) {
               ebayBtn.href = data.ebayVerifyUrl;
               ebayBtn.dataset.state = "visible";
+            }
+
+            if (data.needsManualEntry === true) {
+              // Backend signals the live data was unusable — skip interstitial,
+              // open the existing manual-entry overlay (state.compsManual flow).
+              state.compsManual = true;
+              state.comps.median = null;
+              state.comps.rangeLow = null;
+              state.comps.rangeHigh = null;
+              state.comps.n = null;
+              state.comps.reprintRisk = "Low";
+              state.comps.trend = "Stable";
+              state.comps.operatorNote = data.operatorNote || "";
+              state.comps.source = "manual entry (Layer 2 returned no usable comps)";
+              state.comps.medianUSD = null;
+              state.comps.rawListingsForAudit = [];
+            } else {
+              // Backend returned computed comps — populate state from new shape
+              // (medianMYR/lowMYR/highMYR), then defer verdict render to the
+              // operator-review interstitial (Patch 2 PART B).
+              state.compsManual = false;
+              state.comps.median = data.medianMYR ?? null;
+              state.comps.rangeLow = data.lowMYR ?? null;
+              state.comps.rangeHigh = data.highMYR ?? null;
+              state.comps.n = data.n ?? null;
+              state.comps.source = data.source || "";
+              // Backend no longer supplies these — sane client-side defaults.
+              // Operator can still edit reprintRisk via the manual-mode tile flip.
+              state.comps.reprintRisk = "Low";
+              state.comps.reprintReason = "";
+              state.comps.catalysts = [];
+              state.comps.risks = [];
+              state.comps.conditionAdjustment = "";
+              state.comps.operatorNote = data.operatorNote || "";
+              state.comps.trend = data.trend || "Stable";
+              state.comps.medianUSD = data.medianUSD ?? null;
+              state.comps.rawListingsForAudit = Array.isArray(data.rawListingsForAudit)
+                ? data.rawListingsForAudit
+                : [];
+              dataForReview = data;
             }
           }
         } catch (err) {
           console.error("[get-comps] error:", err);
           state.compsManual = true;
+          state.comps.medianUSD = null;
+          state.comps.rawListingsForAudit = [];
         }
 
-        setCompsState("result");
-        // Reset asking + per-tile + pillar overrides for a fresh verdict
-        state.asking = null;
-        state.pillarOverridden.clear();
-        state.pillarReasonOverridden.clear();
-        state.tileOverrides.clear();
-        state.lastTier = null;
-        els.vAsking.value = "";
-        // Sync manual-mode inputs to current state.comps so the editable view
-        // reflects API values when full-manual fires, and so any stale value
-        // from a prior demo gets overwritten.
-        els.mManMedian.value = state.comps.median ?? "";
-        els.mManLow.value = state.comps.rangeLow ?? "";
-        els.mManHigh.value = state.comps.rangeHigh ?? "";
-        els.mManN.value = state.comps.n ?? "";
-        els.mManReprint.value = state.comps.reprintRisk || "Low";
-        els.mManTrend.value = state.comps.trend || "Stable";
-        els.mManNote.value = state.comps.operatorNote || "";
-        renderVerdictView();
-        // Focus asking input so the operator can start typing immediately
-        setTimeout(() => els.vAsking.focus(), 50);
+        if (dataForReview) {
+          // Success path — show interstitial, defer verdict render until operator decides.
+          openOperatorReview(dataForReview);
+        } else {
+          // Manual mode (network failure or needsManualEntry=true) — render directly.
+          transitionToVerdictResult();
+        }
       }
+
+      // ============================================================
+      // Operator review interstitial (Patch 2 PART B)
+      // ============================================================
+      function escapeAttr(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function openOperatorReview(data) {
+        els.orMedian.textContent = `RM ${data.medianMYR}`;
+        els.orRange.textContent = `RM ${data.lowMYR} – RM ${data.highMYR}`;
+        els.orSource.textContent = data.source || "—";
+        els.orN.textContent = `${data.n || 0} listings used`;
+        els.orDiagnostic.textContent = data.operatorNote || "—";
+
+        const listings = Array.isArray(data.rawListingsForAudit) ? data.rawListingsForAudit : [];
+        if (listings.length === 0) {
+          els.orListings.innerHTML =
+            '<div style="color:rgba(255,255,255,0.40); font-style:italic;">No raw listings to inspect.</div>';
+        } else {
+          els.orListings.innerHTML = listings.map((li) => {
+            const grade = li.isGraded
+              ? `<span class="grade">[${escapeAttr(li.gradeIfGraded || "GRADED")}]</span> `
+              : "";
+            const url = escapeAttr(li.url || "");
+            const titleEsc = escapeAttr(li.title || "");
+            const linkHtml = url
+              ? ` <a href="${url}" target="_blank" rel="noopener noreferrer">view ↗</a>`
+              : "";
+            return `<div class="op-review-listing"><span class="price">$${Number(li.priceUSD).toFixed(2)}</span> ${grade}${titleEsc}${linkHtml}</div>`;
+          }).join("");
+        }
+        // Reset collapsed state on open
+        els.orListings.hidden = true;
+        els.orToggleListings.textContent = "View raw listings ↓";
+        showModal("operator-review");
+      }
+
+      els.orToggleListings.addEventListener("click", () => {
+        const wasHidden = els.orListings.hidden;
+        els.orListings.hidden = !wasHidden;
+        els.orToggleListings.textContent = wasHidden
+          ? "View raw listings ↑"
+          : "View raw listings ↓";
+      });
+
+      els.orLooksRight.addEventListener("click", () => {
+        closeModal();
+        transitionToVerdictResult();
+      });
+
+      els.orOverride.addEventListener("click", () => {
+        // Flip into manual edit; tiles pre-fill from current state.comps via
+        // transitionToVerdictResult(). Tag the source so the audit trail
+        // shows operator validation happened.
+        state.compsManual = true;
+        state.comps.source = "operator-verified (Shiny App, adjusted from API)";
+        closeModal();
+        transitionToVerdictResult();
+      });
+
+      els.orCancel.addEventListener("click", () => {
+        // Wipe comps + asking + eBay button, then drop back to Screen 2 so
+        // operator can re-pick a condition (or hit Wrong card / re-snap).
+        state.comps.median = null;
+        state.comps.rangeLow = null;
+        state.comps.rangeHigh = null;
+        state.comps.n = null;
+        state.comps.source = "";
+        state.comps.operatorNote = "";
+        state.comps.medianUSD = null;
+        state.comps.rawListingsForAudit = [];
+        state.compsManual = false;
+        state.asking = null;
+        els.vAsking.value = "";
+
+        const ebayBtn = document.querySelector(".ebay-verify-btn");
+        if (ebayBtn) {
+          ebayBtn.href = "";
+          ebayBtn.dataset.state = "hidden";
+        }
+
+        closeModal();
+        setCompsState("idle");
+        showScreen("identify");
+      });
 
       // Asking input
       els.vAsking.addEventListener("input", () => {
