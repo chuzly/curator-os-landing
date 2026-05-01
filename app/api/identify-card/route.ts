@@ -1,4 +1,8 @@
-// Haiku 4.5 used for speed/cost. If identification quality drops on variant matching (regular vs SIR vs SAR vs Hyper Rare), revert to claude-sonnet-4-6.
+// Sonnet 4.6 — reverted from Haiku 4.5 for identification accuracy diagnostic.
+// Hypothesis: Haiku may drop variant/set/number detail on niche cards (Asia Promos, recent releases),
+// causing get-comps to fetch prices for wrong variant. Sonnet has stronger vision reasoning.
+// If identification quality matches Haiku exactly across 3+ test cards, revert back to Haiku for cost/speed
+// (claude-haiku-4-5-20251001). If Sonnet ID is meaningfully more accurate, keep Sonnet here.
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -75,7 +79,7 @@ export async function POST(req: Request) {
   try {
     const response = await client.messages.create(
       {
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [
