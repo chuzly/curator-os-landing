@@ -3637,6 +3637,7 @@
         const btn = e.target.closest(".ebay-verify-btn");
         if (!btn) return;
         e.preventDefault();
+        e.stopPropagation();
         if (state && state.comps && state.comps.ebayVerifyUrl) {
           window.open(state.comps.ebayVerifyUrl, "_blank", "noopener,noreferrer");
         }
