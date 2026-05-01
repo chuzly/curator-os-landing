@@ -2477,6 +2477,19 @@
         // Reserve CTA: only enabled when tier is computable
         els.reserveBtn.disabled = !tier;
 
+        // eBay verify button — re-apply visibility on every render so it survives
+        // bfcache restore and any state-triggered re-render (iPad Safari quirk).
+        const ebayBtnRender = document.querySelector(".ebay-verify-btn");
+        if (ebayBtnRender) {
+          if (state.comps.ebayVerifyUrl) {
+            ebayBtnRender.href = state.comps.ebayVerifyUrl;
+            ebayBtnRender.dataset.state = "visible";
+          } else {
+            ebayBtnRender.href = "";
+            ebayBtnRender.dataset.state = "hidden";
+          }
+        }
+
         // Fundamentals panel — re-render from current state.fundamentals (no fetch),
         // then schedule a debounced fetch if asking + comps are ready. The debounce
         // dedupes rapid renders triggered by every keystroke.
@@ -2546,6 +2559,7 @@
 
         // Clear eBay verify button (defensive — also auto-hides via tile flip but
         // wiping href + state prevents stale URL from leaking across demos).
+        state.comps.ebayVerifyUrl = null;
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn) {
           ebayBtn.href = "";
@@ -2655,7 +2669,10 @@
         state.comps.conditionAdjustment = "";
         state.compsManual = false;
 
-        // eBay verify button — show with the prepared URL.
+        // eBay verify button — persist URL in state so renderVerdictView re-applies on every render.
+        if (m.ebayVerifyUrl) {
+          state.comps.ebayVerifyUrl = m.ebayVerifyUrl;
+        }
         const ebayBtn = document.querySelector(".ebay-verify-btn");
         if (ebayBtn && m.ebayVerifyUrl) {
           ebayBtn.href = m.ebayVerifyUrl;
