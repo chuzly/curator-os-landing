@@ -90,27 +90,65 @@ CRITICAL RULES:
 - DO NOT estimate prices from training data. ONLY return listings you actually saw in search results.
 - DO NOT include graded listings if condition is raw. Filter at search time AND filter again before returning.
 - All prices must be USD numbers. Backend converts to MYR.
-- Return JSON ONLY. No prose before or after.`;
+
+JSON OUTPUT FORMAT (STRICTLY ENFORCED):
+- Return JSON ONLY. The very first character of your response MUST be the opening { brace.
+- DO NOT write any prose, planning, reasoning, or commentary before the JSON. NOT EVEN ONE WORD.
+- DO NOT wrap the JSON in markdown code fences (no triple-backtick json or triple-backtick).
+- DO NOT add explanation after the JSON.
+- If you have analysis to share, put it in the diagnosticNote field WITHIN the JSON.
+- Bad output: 'I found these listings. Here is the JSON:' followed by JSON → REJECTED
+- Bad output: triple-backtick json then JSON then triple-backtick → REJECTED
+- Good output: starts immediately with { and ends with the closing }`;
 
 // ---------- JSON extraction ----------
 
 function extractJson(text: string): unknown | null {
   const cleaned = text.trim();
-  // Try direct parse first.
+
+  // Strategy 1: Direct parse (model followed instructions perfectly).
   try {
     return JSON.parse(cleaned);
-  } catch {}
-  // Strip code fences if present.
+  } catch { /* fall through */ }
+
+  // Strategy 2: Strip markdown code fences if model wrapped output.
   const fenced = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (fenced) {
-    try { return JSON.parse(fenced[1]); } catch {}
+    try {
+      return JSON.parse(fenced[1].trim());
+    } catch { /* fall through */ }
   }
-  // Find first balanced { ... }.
-  const first = cleaned.indexOf("{");
-  const last = cleaned.lastIndexOf("}");
-  if (first !== -1 && last > first) {
-    try { return JSON.parse(cleaned.slice(first, last + 1)); } catch {}
+
+  // Strategy 3: Brace-counting walk to find the outermost balanced { ... } block.
+  // Handles cases where model writes prose preamble before/after the JSON,
+  // or where prose contains stray { or } characters that would break naive
+  // indexOf/lastIndexOf slicing.
+  const firstBrace = cleaned.indexOf('{');
+  if (firstBrace === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escapeNext = false;
+  for (let i = firstBrace; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escapeNext) { escapeNext = false; continue; }
+    if (ch === '\\' && inString) { escapeNext = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        const candidate = cleaned.slice(firstBrace, i + 1);
+        try {
+          return JSON.parse(candidate);
+        } catch {
+          return null;
+        }
+      }
+    }
   }
+
   return null;
 }
 

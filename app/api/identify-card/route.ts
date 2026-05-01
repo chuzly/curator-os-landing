@@ -37,7 +37,33 @@ const cardSchema = {
   additionalProperties: false,
 } as const;
 
-const SYSTEM_PROMPT = `You are a Pokemon TCG card identifier. Given a photo, identify the card. Return STRICTLY a JSON object with these fields: cardName, set, cardNumber, variant (Regular/Reverse Holo/Full Art/SIR/SAR/Promo), era, language (EN/JP/ZH-S/ZH-T/KR), variantFlag (empty string or 'Verify [feature]'), confidence (high/medium/low). If you cannot identify confidently, return confidence='low' but still return your best guess.`;
+const SYSTEM_PROMPT = `You are a Pokemon TCG card identifier. Given a photo, identify the card. Return STRICTLY a JSON object with these fields: cardName, set, cardNumber, variant (Regular/Reverse Holo/Full Art/SIR/SAR/Promo), era, language (EN/JP/ZH-S/ZH-T/KR), variantFlag (empty string or 'Verify [feature]'), confidence (high/medium/low). If you cannot identify confidently, return confidence='low' but still return your best guess.
+
+VARIANT DETECTION RULES — CRITICAL:
+
+The card's printed NUMBER is the truth source for variant, NOT visual style.
+
+For Sun & Moon era Pokemon TCG (sets like Unbroken Bonds /214, Cosmic Eclipse /236, Team Up /181, Hidden Fates /68a, Detective Pikachu /18, etc.):
+
+DECISION RULE based on the printed number (format: X/Y where X is print number, Y is set total):
+1. If X is significantly less than Y (ratio X/Y < 0.95): variant is 'Regular Holo' or 'Non-Holo' (the standard print). Example: 130/214 → ratio 0.61 → Regular Holo.
+2. If X is at or just below Y (ratio X/Y between 0.95 and 1.0): variant MAY be 'Full Art'. Example: 205/214 → ratio 0.96 → Full Art.
+3. If X is GREATER than Y (X > Y): variant is 'Secret Rare' / 'Rainbow Rare' / 'Alt Art' / 'Gold'. Example: 225/214 → X > Y → Rainbow Rare.
+
+WARNING — DO NOT BE FOOLED BY VISUAL STYLE:
+- Modern Tag Team Regular Holo prints have dynamic borderless artwork that LOOKS like Full Art
+- Holo shimmer, dynamic poses, full-character bleed = NOT diagnostic of Full Art
+- The PRINTED NUMBER on the card is the only reliable variant signal
+- A 'TAG TEAM' label on the card does not mean 'Full Art' — Tag Team cards exist in Regular Holo, Full Art, and Alt Art prints with different numbers
+
+EXAMPLES:
+- Gardevoir & Sylveon GX 130/214 (Unbroken Bonds): variant='Regular Holo' (NOT Full Art, despite dynamic art)
+- Gardevoir & Sylveon GX 205/214 (Unbroken Bonds): variant='Full Art'
+- Gardevoir & Sylveon GX 225/214 (Unbroken Bonds): variant='Rainbow Rare'
+- Reshiram & Charizard GX 020/214 (Unbroken Bonds): variant='Regular Holo'
+- Reshiram & Charizard GX 217/214 (Unbroken Bonds): variant='Rainbow Rare'
+
+If you cannot clearly read the card number from the image, set variant to 'Unknown' rather than guessing from visual style.`;
 
 function inferMediaType(b64: string): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
   // base64 magic bytes: /9j/ = JPEG, iVBOR = PNG, UklGR = WEBP, R0lGOD = GIF
