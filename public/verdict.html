@@ -3361,6 +3361,16 @@
         tile.addEventListener("click", (e) => {
           // Ignore clicks that originate inside the (visible) edit block
           if (e.target.closest("[data-tile-edit]")) return;
+          // Skip the Sold Range tile entirely — its eBay button child element
+          // would otherwise trigger this handler via event bubbling, flipping
+          // the tile to edit mode and hiding the button. Operator must use
+          // manual mode toggle to edit Sold Range.
+          if (tile.dataset.tile === "range") return;
+          // Also skip clicks originating on or inside the eBay button (defense
+          // in depth — the .ebay-verify-btn click handler runs in capture phase
+          // with stopImmediatePropagation but on iPad Safari that may not block
+          // listeners bound directly to ancestor elements).
+          if (e.target.closest(".ebay-verify-btn")) return;
           const tileId = tile.dataset.tile;
           const firstInput = tile.querySelector(
             "[data-tile-edit] input, [data-tile-edit] select, [data-tile-edit] textarea",
