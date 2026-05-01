@@ -1,4 +1,8 @@
-// Haiku 4.5 used for speed/cost. If comp estimation quality drops (wide ranges, miscategorized cards, hallucinated venues), revert to claude-sonnet-4-6.
+// Haiku 4.5 + domain-restricted web_search (eBay, eBay MY, TCGPlayer, PriceCharting, Cardmarket).
+// max_uses: 1 to stay under Vercel Hobby 60s ceiling.
+// If timeouts spike or coverage breaks down, two rollback options:
+//   1. Disable web_search: remove tools array (revert to commit ade2a30 behavior)
+//   2. Revert to Sonnet 4.6: model: "claude-sonnet-4-6" (better reasoning, slightly slower)
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -19,9 +23,9 @@ type CompsResult = {
   operatorNote: string;
 };
 
-const SYSTEM_PROMPT = `You are a Pokemon TCG sold comp researcher. Given a card and condition, return estimated sold comp data in MYR (Malaysian Ringgit).
+const SYSTEM_PROMPT = `You are a Pokemon TCG sold comp researcher. Given a card and condition, return sold comp data in MYR (Malaysian Ringgit).
 
-You are estimating from training data only — no live web search available. Be honest in operatorNote about data freshness limitations and recommend the user verify with live comps in the Tuesday follow-up.
+You have ONE web search call available. Use it to query for recent sold listings on eBay (filter to sold + recent), TCGPlayer market price, or PriceCharting reference. Combine the search query to maximize signal: card name + set + variant + 'sold' or 'price'. After the search, synthesize a price range in MYR. If search returns zero useful results, fall back to your training data and EXPLICITLY note in operatorNote that you couldn't find live comps and the estimate is rough.
 
 When estimating prices for the MY/SG/JP/HK/TW market, weight APAC venues (Carousell, Mercari JP, Yahoo Auctions JP, Shopee MY) alongside US (eBay, TCGPlayer) and EU (Cardmarket). Currency conversions: USD 1 = MYR 4.7, JPY 100 = MYR 3, EUR 1 = MYR 5.0.
 
@@ -29,16 +33,23 @@ Return ONLY a single JSON object — no prose, no markdown code fences, no expla
 - median (number, RM)
 - rangeLow (number)
 - rangeHigh (number)
-- n (number — your estimate of how many comps you are inferring from)
-- source (string — always "estimated (training data)" since no live web search is available)
+- n (number — count of recent sold listings you found, or your estimate of comps inferred from training)
+- source (string — set based on what came back from the search:
+    * If web_search returned eBay data: "eBay sold (live)"
+    * If web_search returned TCGPlayer data: "TCGPlayer (live)"
+    * If web_search returned PriceCharting data: "PriceCharting (live)"
+    * If multiple sources contributed: "mixed (live)"
+    * If search returned nothing useful and you fell back to training: "estimated (training data, search returned no useful results)")
 - reprintRisk ("Low" / "Medium" / "High")
 - reprintReason (1-line string)
 - catalysts (array of 1-2 strings)
 - risks (array of 1-2 strings)
 - conditionAdjustment (1-line string explaining how condition affects value)
-- operatorNote (1-2 sentences in calm investment educator voice — anti-hype, framework-driven. If your data confidence is medium or low, you MUST include the disclosure: "Estimated from training data — verify with live comps in your Tuesday follow-up verdict report.")
+- operatorNote (1-2 sentences in calm investment educator voice — anti-hype, framework-driven.
+    * If live data was found via search: write a calm calibrated note based on that data. Do NOT include the disclaimer.
+    * If the search returned no useful results and you fell back to training data, you MUST include the disclaimer: "Estimate only — search returned thin results. Verify with live comps in your Tuesday verdict report.")
 
-If data is thin or your training data may be stale on this card, be honest in operatorNote. Don't fabricate.
+If data is thin or your search returned only ambiguous results, be honest in operatorNote. Don't fabricate.
 
 Output the JSON object directly. Do not wrap it in code fences.`;
 
@@ -133,10 +144,28 @@ export async function POST(req: Request) {
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
+        tools: [
+          {
+            type: "web_search_20260209",
+            name: "web_search",
+            max_uses: 1,
+            allowed_domains: ["ebay.com", "ebay.com.my", "tcgplayer.com", "pricecharting.com", "cardmarket.com"],
+          } as unknown as Anthropic.Messages.ToolUnion,
+        ],
       },
-      { timeout: 30_000 },
+      { timeout: 50_000 },
     );
 
+    // Count actual server-side tool invocations from the response content blocks.
+    // (`response.tool_use_count` is not an SDK field — server tools surface as
+    // `server_tool_use` blocks and we count those.)
+    const toolUseCount = (response.content || []).filter(
+      (b) => b.type === "server_tool_use",
+    ).length;
+    console.log(
+      `[get-comps] tools used:`, toolUseCount || "none",
+      `, content blocks:`, response.content?.length || 0,
+    );
     console.log(
       `[get-comps] Anthropic call complete in ${Date.now() - t0}ms, stop_reason=${response.stop_reason}`,
     );
@@ -162,7 +191,7 @@ export async function POST(req: Request) {
     console.error("[get-comps] error:", err);
     console.error(`[get-comps] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      console.error("[get-comps] timeout after 30s");
+      console.error("[get-comps] timeout after 50s");
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
     if (err instanceof Anthropic.APIError) {
