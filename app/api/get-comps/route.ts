@@ -368,7 +368,9 @@ export async function POST(req: Request) {
   const ebayQuery = encodeURIComponent(queryString);
   // _fcid=1 forces eBay US site (country filter ID 1 = United States); _stpos=10001 anchors to NYC ZIP so prices render in USD.
   // Without these, iPad Safari geolocation can land on Korean Won localized prices.
-  const ebayVerifyUrl = `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60&_fcid=1&_stpos=10001`;
+  // _salic=1 + LH_PrefLoc=1 + _dmd=1 — additional params to force USD display on iPad Safari
+  // (the original _fcid=1 + _stpos=10001 combo wasn't sufficient — was redirecting to KRW).
+  const ebayVerifyUrl = `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60&_fcid=1&_stpos=10001&_salic=1&LH_PrefLoc=1&_dmd=1`;
 
   const client = new Anthropic({ apiKey });
 
