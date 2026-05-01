@@ -1,17 +1,14 @@
-// Opus 4.7 — escalated from Haiku 4.5 for comp accuracy diagnostic.
-// Hypothesis: Opus's stronger reasoning may produce more careful price anchoring on training data
-// vs Haiku's looser sampling that produced wide variance and large miss on hyped chase cards.
-// Note: this does NOT fix the underlying no-live-data limitation. Operator must still verify
-// against Shiny App for any off-list card before showing customer.
-// If Opus prices match Haiku's pattern (3-4x off on chase cards), revert to Haiku for cost (claude-haiku-4-5-20251001).
-// If Opus is meaningfully more accurate or more honest about uncertainty, keep Opus.
-// Context: web_search re-enable was attempted at b09e9d8, hit Vercel 60s ceiling. Reverted.
-// Until Vercel Pro upgrade or Phase 3 direct-API integration, Layer 2 returns training-only estimates.
+// Opus 4.7 + domain-restricted web_search (eBay, eBay MY, TCGPlayer, PriceCharting, Cardmarket).
+// Vercel Pro tier — function timeout ceiling 300 sec. max_uses: 2 for primary + fallback search.
+// SDK timeout 240 sec, maxDuration 300 sec, gives 60 sec error-handling headroom.
+// If web_search returned data: source = "<venue> (live)", no training-data disclaimer.
+// If search thin or returned nothing: source = "estimated (training data, search returned no useful results)", mandatory disclaimer in operatorNote.
+// Operator should still verify against Shiny App for any high-value off-list card before showing customer.
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type CompsResult = {
   median: number;
@@ -27,9 +24,9 @@ type CompsResult = {
   operatorNote: string;
 };
 
-const SYSTEM_PROMPT = `You are a Pokemon TCG sold comp researcher. Given a card and condition, return estimated sold comp data in MYR (Malaysian Ringgit).
+const SYSTEM_PROMPT = `You are a Pokemon TCG sold comp researcher. Given a card and condition, return sold comp data in MYR (Malaysian Ringgit).
 
-You are estimating from training data only — no live web search available. Be honest in operatorNote about data freshness limitations and recommend the user verify with live comps in the Tuesday follow-up.
+You have TWO web search calls available. Use the first to query eBay sold listings (filter to 'sold' + recent + the specific card variant). Use the second only if the first returns thin or ambiguous results — try TCGPlayer market price, PriceCharting reference, or Cardmarket EU sales depending on what's likely strongest for this card. Combine search query terms aggressively: card name + set + variant tag + 'sold' or 'price'. After search(es), synthesize a price range in MYR. If both searches return nothing useful, fall back to training data and EXPLICITLY note in operatorNote that you couldn't find live comps and the estimate is rough.
 
 When estimating prices for the MY/SG/JP/HK/TW market, weight APAC venues (Carousell, Mercari JP, Yahoo Auctions JP, Shopee MY) alongside US (eBay, TCGPlayer) and EU (Cardmarket). Currency conversions: USD 1 = MYR 4.7, JPY 100 = MYR 3, EUR 1 = MYR 5.0.
 
@@ -37,16 +34,24 @@ Return ONLY a single JSON object — no prose, no markdown code fences, no expla
 - median (number, RM)
 - rangeLow (number)
 - rangeHigh (number)
-- n (number — your estimate of how many comps you are inferring from)
-- source (string — always "estimated (training data)" since no live web search is available)
+- n (number — count of recent sold listings you found, or your estimate of comps inferred from training)
+- source (string — set based on what came back from the search:
+    * If web_search returned eBay data: "eBay sold (live)"
+    * If web_search returned TCGPlayer data: "TCGPlayer (live)"
+    * If web_search returned PriceCharting data: "PriceCharting (live)"
+    * If web_search returned Cardmarket data: "Cardmarket EU (live)"
+    * If multiple sources contributed: "mixed (live)"
+    * If search returned nothing useful and you fell back to training: "estimated (training data, search returned no useful results)")
 - reprintRisk ("Low" / "Medium" / "High")
 - reprintReason (1-line string)
 - catalysts (array of 1-2 strings)
 - risks (array of 1-2 strings)
 - conditionAdjustment (1-line string explaining how condition affects value)
-- operatorNote (1-2 sentences in calm investment educator voice — anti-hype, framework-driven. You MUST include the disclosure: "Estimated from training data — verify with live comps in your Tuesday follow-up verdict report.")
+- operatorNote (1-2 sentences in calm investment educator voice — anti-hype, framework-driven.
+    * If live data was found via search: write a calm calibrated note based on that data. Do NOT include the disclaimer.
+    * If the search returned no useful results and you fell back to training data, you MUST include the disclaimer: "Estimate only — search returned thin results. Verify with live comps in your Tuesday verdict report.")
 
-If data is thin or your training data may be stale on this card, be honest in operatorNote. Don't fabricate.
+If data is thin or your search returned only ambiguous results, be honest in operatorNote. Don't fabricate.
 
 Output the JSON object directly. Do not wrap it in code fences.`;
 
@@ -141,8 +146,16 @@ export async function POST(req: Request) {
         max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
+        tools: [
+          {
+            type: "web_search_20260209",
+            name: "web_search",
+            max_uses: 2,
+            allowed_domains: ["ebay.com", "ebay.com.my", "tcgplayer.com", "pricecharting.com", "cardmarket.com"],
+          } as unknown as Anthropic.Messages.ToolUnion,
+        ],
       },
-      { timeout: 55_000 },
+      { timeout: 240_000 },
     );
 
     // Count actual server-side tool invocations from the response content blocks.
@@ -180,7 +193,7 @@ export async function POST(req: Request) {
     console.error("[get-comps] error:", err);
     console.error(`[get-comps] failed after ${Date.now() - t0}ms`);
     if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      console.error("[get-comps] timeout after 55s");
+      console.error("[get-comps] timeout after 240s");
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
     if (err instanceof Anthropic.APIError) {
