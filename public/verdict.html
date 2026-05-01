@@ -41,6 +41,69 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
 
+    /* ========================================================================
+       READ-ONLY LOCKDOWN — verdict screen + all sibling screens.
+       Operators have intentional inputs (asking, manual tiles, pillar overrides,
+       signup form). Everything else is locked so customer taps cannot enter
+       edit mode or delete content.
+
+       Implementation notes:
+       - `body *` baseline locks every element to read-only.
+       - `body input, body textarea, body select` carve-out has HIGHER specificity
+         (0,0,0,2 vs 0,0,0,1) so inputs win regardless of source order, both !important.
+       - `-webkit-user-modify` is non-standard but supported on WebKit (iPad Safari =
+         demo target). Standard `user-modify` shipped alongside for forward-compat.
+       - Touch-callout disabled globally (no iOS long-press menu on UI chrome) but
+         re-enabled on prose containers below so customer can copy thesis / risks /
+         catalysts text if they want.
+       ======================================================================== */
+    body * {
+      -webkit-user-modify: read-only !important;
+      user-modify: read-only !important;
+      -webkit-touch-callout: none;
+    }
+    body input, body textarea, body select {
+      -webkit-user-modify: read-write !important;
+      user-modify: read-write !important;
+      -webkit-touch-callout: default;
+    }
+
+    /* Cursors: default everywhere, text on inputs, pointer on intentional click targets */
+    body * { cursor: default; }
+    body input, body textarea, body select { cursor: text; }
+    body button,
+    body a,
+    body [role="button"],
+    body .pill,
+    body .cond-pill,
+    body .reset-btn,
+    body .reserve-cta,
+    body .ebay-verify-btn,
+    body .prepared-card-item,
+    body .prepared-trigger-btn,
+    body .modal-card button,
+    body .op-review-btn,
+    body .edu-toggle,
+    body .op-review-toggle {
+      cursor: pointer;
+    }
+
+    /* Defensive: re-enable text selection + long-press copy on prose containers
+       so customer/operator can copy quotes from the panels. user-modify stays
+       read-only — selection !== editing. */
+    body .fundamentals-panel,
+    body .edu,
+    body .op-note,
+    body [class*="reason"],
+    body [class*="thesis"],
+    body [class*="narrative"] {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-user-modify: read-only !important;
+      user-modify: read-only !important;
+      -webkit-touch-callout: default;
+    }
+
     /* ---------- Topbar ---------- */
     .topbar {
       position: fixed; top: 0; left: 0; right: 0;
