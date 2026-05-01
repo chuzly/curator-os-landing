@@ -70,7 +70,7 @@ INPUTS you will receive in the user message:
 YOUR JOB:
 1. Construct a precise eBay sold-listings search query
 2. Use web_search (you have max_uses: 2) to find recent eBay sold listings
-3. Return UP TO 10 individual listings as structured JSON
+3. Return UP TO 5 individual listings as structured JSON
 4. Do NOT compute median or range — backend handles this
 5. Do NOT do currency conversion — backend handles this
 
@@ -110,6 +110,7 @@ CRITICAL RULES:
 - DO NOT estimate prices from training data. ONLY return listings you actually saw in search results.
 - DO NOT include graded listings if condition is raw. Filter at search time AND filter again before returning.
 - All prices must be USD numbers. Backend converts to MYR.
+- Keep titles SHORT. Use the original eBay listing title verbatim — do NOT add commentary or context. Long titles waste tokens.
 
 JSON OUTPUT FORMAT (STRICTLY ENFORCED):
 - Return JSON ONLY. The very first character of your response MUST be the opening { brace.
@@ -267,7 +268,7 @@ async function searchConditionListings(
     response = await client.messages.create(
       {
         model: "claude-opus-4-7",
-        max_tokens: 4096,
+        max_tokens: 8192,  // was 4096 — listing array was getting truncated mid-JSON
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
         tools: [
