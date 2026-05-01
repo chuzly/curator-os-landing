@@ -1466,7 +1466,7 @@
                 </div>
               </div>
               <div class="pillar-def">Quality of the card itself — will more get printed, are people still wanting it?</div>
-              <input id="pAExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
+              <input id="pAExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" readonly />
             </div>
             <div class="pillar-row">
               <div class="pillar-header">
@@ -1477,7 +1477,7 @@
                 </div>
               </div>
               <div class="pillar-def">Whether there's actually a working market — buyers, sellers, price direction.</div>
-              <input id="pBExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
+              <input id="pBExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" readonly />
             </div>
             <div class="pillar-row">
               <div class="pillar-header">
@@ -1488,7 +1488,7 @@
                 </div>
               </div>
               <div class="pillar-def">Trade math — asking price vs what people are actually paying.</div>
-              <input id="pCExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
+              <input id="pCExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" readonly />
             </div>
             <div class="pillar-row">
               <div class="pillar-header">
@@ -1499,7 +1499,7 @@
                 </div>
               </div>
               <div class="pillar-def">Right card for YOU — depends if you're collecting, flipping, or holding long-term.</div>
-              <input id="pDExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" />
+              <input id="pDExp" type="text" autocomplete="off" placeholder="Why this score?" class="pillar-reason" readonly />
             </div>
             <div class="composite-row">
               <span class="metric-label" style="color:rgba(255,255,255,0.55);">Composite</span>
@@ -2422,6 +2422,10 @@
         //   override on that pillar (single tap on the input, see click handler below).
         if (els.mManNote) {
           els.mManNote.readOnly = !state.compsManual;
+          els.pAExp.readOnly = !state.compsManual;
+          els.pBExp.readOnly = !state.compsManual;
+          els.pCExp.readOnly = !state.compsManual;
+          els.pDExp.readOnly = !state.compsManual;
         }
         for (const letter of ["A", "B", "C", "D"]) {
           const fieldId = pillarReasonByLetter[letter];
@@ -3347,6 +3351,14 @@
         // edit the operator note. The mManNote.readOnly toggle is defense in depth.
         if (!state.compsManual) return;
         startTileEdit("opNote", els.mManNote);
+      });
+
+      // iOS Safari guard: readonly inputs can still focus and pop keyboard on
+      // some iOS versions. Force blur when not in manual mode.
+      ["pAExp","pBExp","pCExp","pDExp"].forEach((id) => {
+        els[id].addEventListener("focus", (e) => {
+          if (!state.compsManual) e.target.blur();
+        });
       });
 
       // Pillar inputs — track override + re-render. Scores and reasons feed
