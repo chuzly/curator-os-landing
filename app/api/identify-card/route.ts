@@ -1,3 +1,4 @@
+// Haiku 4.5 used for speed/cost. If identification quality drops on variant matching (regular vs SIR vs SAR vs Hyper Rare), revert to claude-sonnet-4-6.
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
   try {
     const response = await client.messages.create(
       {
-        model: "claude-sonnet-4-6",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [
