@@ -3638,10 +3638,11 @@
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         if (state && state.comps && state.comps.ebayVerifyUrl) {
           window.open(state.comps.ebayVerifyUrl, "_blank", "noopener,noreferrer");
         }
-      });
+      }, true);  // capture phase — fires before bubble-phase tile handler
 
       // ============================================================
       // INITIAL SETUP
