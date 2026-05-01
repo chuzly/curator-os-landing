@@ -38,6 +38,26 @@ WHEN PARSING eBay SEARCH RESULTS:
 - The median should reflect the most common transaction price, not an average that includes outliers.
 - If sold listings show wide variance (e.g., raw $40, PSA 9 $80, PSA 10 $200), report the RAW NM-condition median and note grading premiums separately in operatorNote.
 
+STRICT CONDITION GATING (raw vs graded):
+- If condition is NM, LP, MP, HP, or DMG: search ONLY for raw / ungraded listings. Add exclusion terms to your search query: -PSA -BGS -CGC -ACE -GMA -TAG -graded -slab. Do NOT include graded sales in median calculation.
+- If condition is Graded: include the grade tier in your query (e.g. 'PSA 10' or 'BGS 9.5') and report comps ONLY from that grade tier.
+- NEVER mix raw and graded listings in a single median calculation.
+- If your raw NM median seems unusually low compared to known graded prices for the same card, you likely included graded outliers OR auction starting bids — re-filter to recent sold completed listings only.
+
+VARIANT VERIFICATION (Tag Team / Full Art / Alt Art cards):
+- Sun & Moon era Tag Team cards: numbers ending in /214 or similar set total. The regular Holo print typically has the lower number (e.g. 130/214). The Full Art version has a different higher number (e.g. 205/214 for Gardevoir & Sylveon). The Alt/Rainbow Rare is yet another number (e.g. 225/214).
+- If the card object specifies variant='Full Art' or 'SAR' or 'SIR' but the cardNumber is in the regular Holo range (e.g. 130/214 instead of the actual Full Art number 205/214), this is a mis-identification from upstream. Treat the card as REGULAR HOLO for comp purposes.
+- When variant tag and card number conflict, trust the CARD NUMBER and add a note to operatorNote: 'Variant flag: identified as [variant] but number [cardNumber] is the regular Holo print. The Full Art / Alt Art version has a different number. Pricing for regular Holo.'
+- When in doubt about variant, search BOTH possibilities and report the one whose listing titles match the actual card number you're querying.
+
+WORKED EXAMPLE — Gardevoir & Sylveon GX 130/214 (Sun & Moon Unbroken Bonds):
+- Regular Holo NM raw eBay sold cluster: $40-65 USD = RM 188-305 (this IS the floor variant)
+- PSA 9 graded: ~$80 USD = RM 376
+- PSA 10 graded: $200-230 USD = RM 940-1080
+- Full Art 205/214: typically 2-3x regular Holo
+- Alt Art / Rainbow 225/214: typically 3-5x regular Holo
+- If user taps NM and your reported median is below $30 USD or above $100 USD for the regular 130/214, your listing selection is wrong — re-filter.
+
 When estimating prices for the MY/SG/JP/HK/TW market, weight APAC venues (Carousell, Mercari JP, Yahoo Auctions JP, Shopee MY) alongside US (eBay, TCGPlayer) and EU (Cardmarket).
 
 CURRENCY CONVERSION (CRITICAL):
