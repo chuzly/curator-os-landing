@@ -513,22 +513,24 @@
       justify-content: center;
       margin-top: 12px;
       padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.04);
+      background-color: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 6px;
       text-decoration: none;
-      transition: background 0.2s, border-color 0.2s;
+      transition: background-color 0.2s, border-color 0.2s;
+      /* eBay logo as data-URI background — survives iPad Safari bfcache (inline SVG does not). */
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'><text x='0' y='30' font-family='Helvetica Neue,Arial,sans-serif' font-weight='900' font-style='italic' font-size='36'><tspan fill='%23E53238'>e</tspan><tspan fill='%230064D2'>b</tspan><tspan fill='%23F5AF02'>a</tspan><tspan fill='%2386B817'>y</tspan></text></svg>");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      width: 60px;
+      height: 24px;
     }
     .ebay-verify-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background-color: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.25);
     }
     .ebay-verify-btn[data-state="hidden"] { display: none; }
-    .ebay-logo {
-      height: 22px;
-      width: auto;
-      display: block;
-    }
 
     .pill-row {
       display: flex; gap: 8px;
@@ -1395,13 +1397,7 @@
             <div data-tile-view>
               <div id="cRange" class="metric-value">RM — – —</div>
               <div id="cSource" class="metric-sub" style="visibility:hidden;">source: —</div>
-              <button type="button" class="ebay-verify-btn" data-state="hidden" aria-label="Verify on eBay sold listings">
-                <svg class="ebay-logo" viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <text x="0" y="30" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-style="italic" font-size="36">
-                    <tspan fill="#E53238">e</tspan><tspan fill="#0064D2">b</tspan><tspan fill="#F5AF02">a</tspan><tspan fill="#86B817">y</tspan>
-                  </text>
-                </svg>
-              </button>
+              <button type="button" class="ebay-verify-btn" data-state="hidden" aria-label="Verify on eBay sold listings"></button>
             </div>
             <div data-tile-edit hidden>
               <div class="tile-edit-row">
