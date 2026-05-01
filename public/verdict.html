@@ -152,6 +152,53 @@
     }
     .cap-link:hover { color: #fff; }
 
+    /* Prepared cards — entry button on capture screen + card-list inside the modal */
+    .prepared-trigger-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid rgba(93, 202, 165, 0.4);
+      color: #5DCAA5;
+      font-family: inherit;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .prepared-trigger-btn:hover { background: rgba(93, 202, 165, 0.08); }
+
+    .prepared-cards-list { margin: 12px 0 16px 0; }
+    .prepared-card-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 16px;
+      margin-bottom: 8px;
+      background: rgba(10, 22, 40, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .prepared-card-item:hover { border-color: #5DCAA5; }
+    .prepared-card-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .prepared-card-subtitle {
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 8px;
+    }
+    .prepared-card-asking {
+      font-size: 11px;
+      color: #5DCAA5;
+      letter-spacing: 0.05em;
+    }
+
     /* ---------- Preview screen ---------- */
     .preview-frame {
       max-width: 480px; max-height: 60vh;
@@ -1026,7 +1073,7 @@
 
         <p class="cap-or">— or —</p>
 
-        <button id="preparedBtn" class="cap-link" type="button">Pick prepared card</button>
+        <button id="preparedBtn" class="prepared-trigger-btn" type="button">Or pick a prepared card →</button>
         <button id="manualBtn" class="btn-secondary" type="button" style="margin-top: 6px;">Manual entry</button>
       </div>
     </section>
@@ -1484,13 +1531,14 @@
     </div>
   </div>
 
-  <!-- =========== MODAL: Prepared cards (stub) =========== -->
+  <!-- =========== MODAL: Prepared cards =========== -->
   <div class="modal-overlay" data-modal="prepared">
     <div class="modal-card">
-      <h2 class="modal-title">Coming soon</h2>
-      <p class="modal-sub">Prepared cards are not wired up yet — use Snap or Manual entry for now.</p>
+      <h2 class="modal-title">Prepared cards</h2>
+      <p class="modal-sub">Pick a card to skip identify + comps and jump straight to the verdict screen with mock data populated. Use this to test the fundamentals panel without depending on the live cascade.</p>
+      <div id="preparedCardsList" class="prepared-cards-list"></div>
       <div class="modal-actions">
-        <button id="preparedClose" class="btn btn-primary" type="button">OK</button>
+        <button id="preparedClose" class="btn btn-secondary" type="button">Cancel</button>
       </div>
     </div>
   </div>
@@ -1527,6 +1575,116 @@
   <script>
     (function () {
       "use strict";
+
+      // ============================================================
+      // PREPARED CARDS — hardcoded test fixtures (Patch 7)
+      // Operator picks one from the prepared modal → bypasses /api/identify-card
+      // and /api/get-comps entirely → jumps straight to the verdict screen with
+      // state pre-populated. /api/get-fundamentals still fires (the whole point
+      // of these fixtures is to test the fundamentals UI without the cascade
+      // pipeline mid-truncation).
+      // ============================================================
+      const PREPARED_CARDS = [
+        {
+          id: "gardevoir-sylveon-gx-130",
+          displayName: "Gardevoir & Sylveon GX",
+          displaySubtitle: "Unbroken Bonds · 130/214 · Regular Holo · EN",
+          card: {
+            cardName: "Gardevoir & Sylveon GX",
+            set: "Unbroken Bonds",
+            cardNumber: "130/214",
+            variant: "Regular Holo",
+            era: "Sun & Moon",
+            language: "EN",
+            condition: "NM",
+          },
+          mockComps: {
+            medianMYR: 230,
+            lowMYR: 188,
+            highMYR: 305,
+            medianUSD: 49,
+            n: 8,
+            trend: "Stable",
+            source: "eBay sold (prepared card, n=8)",
+            operatorNote: "Recent eBay sold cluster $40-65 USD raw NM, converted to RM 188-305. Median RM 230 reflects 8 sold listings over 30 days.",
+            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Gardevoir%20Sylveon%20GX%20Unbroken%20Bonds%20130%2F214&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60",
+            rawListingsForAudit: [
+              { priceUSD: 40, title: "Gardevoir & Sylveon GX 130/214 NM Tag Team", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-30", url: "https://www.ebay.com/itm/example1", soldFormat: "auction", shippingNotes: null },
+              { priceUSD: 51, title: "Pokemon Gardevoir & Sylveon GX 130/214 Sun & Moon Unbroken Bonds NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-27", url: "https://www.ebay.com/itm/example2", soldFormat: "auction", shippingNotes: null },
+              { priceUSD: 58, title: "Gardevoir Sylveon GX 130/214 NM Pre-Owned", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-25", url: "https://www.ebay.com/itm/example3", soldFormat: "buy_it_now", shippingNotes: null },
+            ],
+          },
+          suggestedAsking: 250,
+          confidence: "high",
+          cascadeUsed: false,
+        },
+        {
+          id: "riolu-mep-010",
+          displayName: "Riolu",
+          displaySubtitle: "McDonald's Match Battle Promo · 010/MEP · Full Art · EN",
+          card: {
+            cardName: "Riolu",
+            set: "McDonald's Match Battle Promo",
+            cardNumber: "010/MEP",
+            variant: "Full Art Promo",
+            era: "Sword & Shield",
+            language: "EN",
+            condition: "NM",
+          },
+          mockComps: {
+            medianMYR: 47,
+            lowMYR: 38,
+            highMYR: 65,
+            medianUSD: 10,
+            n: 12,
+            trend: "Up",
+            source: "operator-verified (Shiny App, prepared card)",
+            operatorNote: "Promo distribution limited to McDonald's Asia 2021 campaign. Shiny App shows median RM 47, range RM 38-65 across 12 recent sales. Trend slightly upward.",
+            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Riolu%20McDonald%20MEP%20010%20Full%20Art&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60",
+            rawListingsForAudit: [
+              { priceUSD: 8, title: "Riolu 010/MEP Pokemon McDonald's Promo Full Art NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-29", url: "https://www.ebay.com/itm/riolu1", soldFormat: "auction", shippingNotes: null },
+              { priceUSD: 11, title: "Pokemon Riolu Full Art Promo McDonald's Match Battle 010", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-22", url: "https://www.ebay.com/itm/riolu2", soldFormat: "buy_it_now", shippingNotes: null },
+              { priceUSD: 13, title: "Riolu McDonald's MEP 010 Full Art Holo Pokemon Card NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-19", url: "https://www.ebay.com/itm/riolu3", soldFormat: "best_offer", shippingNotes: null },
+            ],
+          },
+          suggestedAsking: 40,
+          confidence: "high",
+          cascadeUsed: false,
+        },
+        {
+          id: "pikachu-ex-179",
+          displayName: "Pikachu ex",
+          displaySubtitle: "Prismatic Evolutions · 179/131 · Hyper Rare Gold · EN",
+          card: {
+            cardName: "Pikachu ex",
+            set: "Prismatic Evolutions",
+            cardNumber: "179/131",
+            variant: "Hyper Rare Gold",
+            era: "Scarlet & Violet",
+            language: "EN",
+            condition: "NM",
+          },
+          mockComps: {
+            medianMYR: 750,
+            lowMYR: 580,
+            highMYR: 950,
+            medianUSD: 160,
+            n: 22,
+            trend: "Up",
+            source: "eBay sold (prepared card, n=22)",
+            operatorNote: "Active chase card from Prismatic Evolutions. eBay sold cluster $120-200 USD raw NM, median ~$160. 22 listings over 30 days, trending upward as set winds down printing.",
+            ebayVerifyUrl: "https://www.ebay.com/sch/i.html?_nkw=Pikachu%20ex%20Prismatic%20Evolutions%20179%2F131%20Gold&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60",
+            rawListingsForAudit: [
+              { priceUSD: 145, title: "Pikachu ex 179/131 Hyper Rare Gold Prismatic Evolutions NM", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-30", url: "https://www.ebay.com/itm/pika1", soldFormat: "auction", shippingNotes: null },
+              { priceUSD: 168, title: "Pokemon Pikachu ex Gold Hyper Rare 179/131 Prismatic Evolutions", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-28", url: "https://www.ebay.com/itm/pika2", soldFormat: "buy_it_now", shippingNotes: null },
+              { priceUSD: 185, title: "Pikachu ex 179/131 Prismatic Evolutions Gold Hyper Rare NM Mint", isGraded: false, gradeIfGraded: null, saleDate: "2026-04-26", url: "https://www.ebay.com/itm/pika3", soldFormat: "best_offer", shippingNotes: null },
+            ],
+          },
+          suggestedAsking: 800,
+          confidence: "high",
+          cascadeUsed: false,
+        },
+      ];
 
       // ============================================================
       // STATE
@@ -1689,6 +1847,7 @@
         resetYes: $("#resetYes"),
         resetCancel: $("#resetCancel"),
         preparedClose: $("#preparedClose"),
+        preparedCardsList: $("#preparedCardsList"),
 
         // Operator review interstitial (Patch 2)
         orMedian: $("#orMedian"),
@@ -2284,8 +2443,109 @@
         }
       });
 
-      els.preparedBtn.addEventListener("click", () => showModal("prepared"));
+      els.preparedBtn.addEventListener("click", () => {
+        populatePreparedCardsModal();
+        showModal("prepared");
+      });
       els.preparedClose.addEventListener("click", () => closeModal());
+
+      // ============================================================
+      // PREPARED CARDS — render the picker modal + load handler (Patch 7)
+      // ============================================================
+      function populatePreparedCardsModal() {
+        const container = els.preparedCardsList;
+        if (!container) return;
+        container.innerHTML = PREPARED_CARDS.map((c) => `
+          <button class="prepared-card-item" data-card-id="${escapeAttr(c.id)}" type="button">
+            <div class="prepared-card-name">${escapeAttr(c.displayName)}</div>
+            <div class="prepared-card-subtitle">${escapeAttr(c.displaySubtitle)}</div>
+            <div class="prepared-card-asking">Suggested asking: RM ${c.suggestedAsking}</div>
+          </button>
+        `).join("");
+        container.querySelectorAll(".prepared-card-item").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.cardId;
+            const prepared = PREPARED_CARDS.find((c) => c.id === id);
+            if (prepared) loadPreparedCard(prepared);
+          });
+        });
+      }
+
+      function loadPreparedCard(prepared) {
+        console.log("[verdict] loading prepared card:", prepared.id);
+        closeModal();
+
+        // Hydrate state.card directly from the fixture (no /api/identify-card call).
+        state.card = { ...prepared.card };
+        state.card.confidence = "high";
+
+        // Hydrate state.comps from the mock comps (no /api/get-comps call, no cascade).
+        const m = prepared.mockComps;
+        state.comps.median = m.medianMYR;
+        state.comps.rangeLow = m.lowMYR;
+        state.comps.rangeHigh = m.highMYR;
+        state.comps.medianUSD = m.medianUSD;
+        state.comps.n = m.n;
+        state.comps.trend = m.trend;
+        state.comps.source = m.source;
+        state.comps.operatorNote = m.operatorNote;
+        state.comps.rawListingsForAudit = Array.isArray(m.rawListingsForAudit)
+          ? m.rawListingsForAudit
+          : [];
+        state.comps.reprintRisk = "Low";
+        state.comps.reprintReason = "";
+        state.comps.catalysts = [];
+        state.comps.risks = [];
+        state.comps.conditionAdjustment = "";
+        state.compsManual = false;
+
+        // eBay verify button — show with the prepared URL.
+        const ebayBtn = document.querySelector(".ebay-verify-btn");
+        if (ebayBtn && m.ebayVerifyUrl) {
+          ebayBtn.href = m.ebayVerifyUrl;
+          ebayBtn.dataset.state = "visible";
+        }
+
+        // Pre-fill asking (operator can adjust).
+        state.asking = prepared.suggestedAsking;
+        if (els.vAsking) els.vAsking.value = String(prepared.suggestedAsking);
+
+        // Profile defaults to Collector if nothing set.
+        if (!state.profile) state.profile = "Collector";
+
+        // Reset per-tile + pillar overrides + clear stale fundamentals so the
+        // panel re-fetches for the new card.
+        state.pillarOverridden.clear();
+        state.pillarReasonOverridden.clear();
+        state.tileOverrides.clear();
+        state.lastTier = null;
+        state.fundamentals = {
+          thesis: null,
+          pillars: null,
+          risks: [],
+          catalysts: [],
+          verdictNarrative: null,
+          loading: false,
+          error: null,
+        };
+
+        // Sync manual-mode tile inputs (they're hidden in auto mode but stale
+        // values would leak through if operator later taps to edit a tile).
+        els.mManMedian.value = state.comps.median ?? "";
+        els.mManLow.value = state.comps.rangeLow ?? "";
+        els.mManHigh.value = state.comps.rangeHigh ?? "";
+        els.mManN.value = state.comps.n ?? "";
+        els.mManReprint.value = state.comps.reprintRisk || "Low";
+        els.mManTrend.value = state.comps.trend || "Stable";
+        els.mManNote.value = state.comps.operatorNote || "";
+
+        // Skip identify + condition screens — straight to verdict result.
+        showScreen("verdict");
+        setCompsState("result");
+        renderVerdictView();
+
+        setTimeout(() => { if (els.vAsking) els.vAsking.focus(); }, 100);
+      }
 
       els.manualBtn.addEventListener("click", () => {
         // Skip identify entirely → land on Screen 2 in user-manual mode
