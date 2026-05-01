@@ -1,8 +1,14 @@
 // Opus 4.7 + domain-restricted web_search (eBay, eBay MY, TCGPlayer, PriceCharting, Cardmarket).
 // Vercel Pro tier — function timeout ceiling 300 sec. max_uses: 2 for primary + fallback search.
 // SDK timeout 240 sec, maxDuration 300 sec, gives 60 sec error-handling headroom.
-// If web_search returned data: source = "<venue> (live)", no training-data disclaimer.
-// If search thin or returned nothing: source = "estimated (training data, search returned no useful results)", mandatory disclaimer in operatorNote.
+//
+// ARCHITECTURE: model returns a structured `listings` array of raw eBay sales it found via
+// web_search. The backend filters by condition (raw vs graded), drops IQR outliers, computes
+// median / low / high in USD, then converts to MYR (× 4.7). Model does NOT compute medians or
+// do FX conversion — those are deterministic backend operations. If model returns < 2 listings
+// or filters drop everything or median is implausibly low/high, the response carries
+// `needsManualEntry: true` so the client falls back to manual mode.
+//
 // Operator should still verify against Shiny App for any high-value off-list card before showing customer.
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
@@ -10,86 +16,83 @@ import Anthropic from "@anthropic-ai/sdk";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-type CompsResult = {
-  median: number;
-  rangeLow: number;
-  rangeHigh: number;
-  n: number;
-  source: string;
-  reprintRisk: "Low" | "Medium" | "High";
-  reprintReason: string;
-  catalysts: string[];
-  risks: string[];
-  conditionAdjustment: string;
-  operatorNote: string;
-  // Server-built after validateComps() — Claude's response does not contain
-  // this field, so validateComps() does NOT check for it. We spread it onto
-  // the JSON response just before returning to the client.
-  ebayVerifyUrl: string;
+// ---------- USD → MYR ----------
+const USD_MYR = 4.7;
+
+// ---------- Types ----------
+
+// One sold listing the model surfaced from web_search.
+type Listing = {
+  priceUSD: number;
+  title: string;
+  isGraded: boolean;
+  gradeIfGraded: string | null;
+  saleDate: string;
+  url: string;
+  soldFormat: string;
+  shippingNotes: string | null;
 };
 
-const SYSTEM_PROMPT = `You are a Pokemon TCG sold comp researcher. Given a card and condition, return sold comp data in MYR (Malaysian Ringgit).
+// What the model returns as JSON (structured raw data — NOT computed stats).
+type ModelOutput = {
+  listings: Listing[];
+  searchQueryUsed: string;
+  venuesSearched: string[];
+  variantWarning: string | null;
+  diagnosticNote: string;
+};
 
-You have TWO web search calls available. Use the first to query eBay sold listings (filter to 'sold' + recent + the specific card variant). Use the second only if the first returns thin or ambiguous results — try TCGPlayer market price, PriceCharting reference, or Cardmarket EU sales depending on what's likely strongest for this card. Combine search query terms aggressively: card name + set + variant tag + 'sold' or 'price'. After search(es), synthesize a price range in MYR. If both searches return nothing useful, fall back to training data and EXPLICITLY note in operatorNote that you couldn't find live comps and the estimate is rough.
+const SYSTEM_PROMPT = `You are a Pokemon TCG market researcher. The operator runs a card investigation booth. Your job is to use web_search to find real recent eBay sold listings for a specific card and condition, then return them as STRUCTURED DATA. The backend will compute medians and currency conversion — you do NOT compute these.
 
-WHEN PARSING eBay SEARCH RESULTS:
-- Use ONLY sold + completed listings — never auction starting bids, never active asking prices.
-- Ignore listings under $5 USD if they look like fragments, mis-listed cards, or damaged copies. Focus on the main price cluster (where most recent sales actually transacted).
-- The median should reflect the most common transaction price, not an average that includes outliers.
-- If sold listings show wide variance (e.g., raw $40, PSA 9 $80, PSA 10 $200), report the RAW NM-condition median and note grading premiums separately in operatorNote.
+INPUTS you will receive in the user message:
+- cardName, set, cardNumber, variant, language, condition
 
-STRICT CONDITION GATING (raw vs graded):
-- If condition is NM, LP, MP, HP, or DMG: search ONLY for raw / ungraded listings. Add exclusion terms to your search query: -PSA -BGS -CGC -ACE -GMA -TAG -graded -slab. Do NOT include graded sales in median calculation.
-- If condition is Graded: include the grade tier in your query (e.g. 'PSA 10' or 'BGS 9.5') and report comps ONLY from that grade tier.
-- NEVER mix raw and graded listings in a single median calculation.
-- If your raw NM median seems unusually low compared to known graded prices for the same card, you likely included graded outliers OR auction starting bids — re-filter to recent sold completed listings only.
+YOUR JOB:
+1. Construct a precise eBay sold-listings search query
+2. Use web_search (you have max_uses: 2) to find recent eBay sold listings
+3. Return UP TO 10 individual listings as structured JSON
+4. Do NOT compute median or range — backend handles this
+5. Do NOT do currency conversion — backend handles this
 
-VARIANT VERIFICATION (Tag Team / Full Art / Alt Art cards):
-- Sun & Moon era Tag Team cards: numbers ending in /214 or similar set total. The regular Holo print typically has the lower number (e.g. 130/214). The Full Art version has a different higher number (e.g. 205/214 for Gardevoir & Sylveon). The Alt/Rainbow Rare is yet another number (e.g. 225/214).
-- If the card object specifies variant='Full Art' or 'SAR' or 'SIR' but the cardNumber is in the regular Holo range (e.g. 130/214 instead of the actual Full Art number 205/214), this is a mis-identification from upstream. Treat the card as REGULAR HOLO for comp purposes.
-- When variant tag and card number conflict, trust the CARD NUMBER and add a note to operatorNote: 'Variant flag: identified as [variant] but number [cardNumber] is the regular Holo print. The Full Art / Alt Art version has a different number. Pricing for regular Holo.'
-- When in doubt about variant, search BOTH possibilities and report the one whose listing titles match the actual card number you're querying.
+CONSTRUCTING THE SEARCH QUERY:
+- Always include: cardName + set + cardNumber + "sold"
+- If condition is NM/LP/MP/HP/DMG (raw): add "-PSA -BGS -CGC -ACE -GMA -graded -slab"
+- If condition is Graded: add "PSA" or "BGS" or "CGC" + grade tier if specified
+- Filter to: site:ebay.com OR site:ebay.com.my, sold completed listings only
 
-WORKED EXAMPLE — Gardevoir & Sylveon GX 130/214 (Sun & Moon Unbroken Bonds):
-- Regular Holo NM raw eBay sold cluster: $40-65 USD = RM 188-305 (this IS the floor variant)
-- PSA 9 graded: ~$80 USD = RM 376
-- PSA 10 graded: $200-230 USD = RM 940-1080
-- Full Art 205/214: typically 2-3x regular Holo
-- Alt Art / Rainbow 225/214: typically 3-5x regular Holo
-- If user taps NM and your reported median is below $30 USD or above $100 USD for the regular 130/214, your listing selection is wrong — re-filter.
+VARIANT VERIFICATION:
+- For Tag Team Pokemon cards (Sun & Moon era): regular Holo has lower number (e.g., 130/214). Full Art is different number (e.g., 205/214). Alt/Rainbow Rare yet another (e.g., 225/214).
+- If variant flag is "Full Art" but cardNumber is in regular Holo range (e.g., 130/214), trust the cardNumber. Treat as Regular Holo. Add note in variantWarning.
 
-When estimating prices for the MY/SG/JP/HK/TW market, weight APAC venues (Carousell, Mercari JP, Yahoo Auctions JP, Shopee MY) alongside US (eBay, TCGPlayer) and EU (Cardmarket).
+RETURN FORMAT — return ONLY a JSON object with this exact structure:
 
-CURRENCY CONVERSION (CRITICAL):
-- All eBay USD prices MUST be converted to MYR before reporting median/range. Use USD 1 = MYR 4.7.
-- All Cardmarket EUR prices MUST be converted: EUR 1 = MYR 5.0.
-- All Mercari/Yahoo Auctions JP prices MUST be converted: JPY 100 = MYR 3.
-- Verify your output in MYR is reasonable. A modern Pokemon TCG card sold for $40 USD should report as RM 188, NOT RM 24. If your final RM number seems suspiciously low compared to typical sold prices on the venue, you may have failed to convert. Double-check.
+{
+  "listings": [
+    {
+      "priceUSD": 40,
+      "title": "Gardevoir Sylveon GX 130/214 Pokemon Unbroken Bonds NM",
+      "isGraded": false,
+      "gradeIfGraded": null,
+      "saleDate": "2026-04-30",
+      "url": "https://www.ebay.com/itm/...",
+      "soldFormat": "auction",
+      "shippingNotes": null
+    }
+  ],
+  "searchQueryUsed": "Gardevoir Sylveon GX 130 214 sold -PSA -BGS -CGC",
+  "venuesSearched": ["ebay.com", "ebay.com.my"],
+  "variantWarning": null,
+  "diagnosticNote": "Honest summary of what you found and any limitations."
+}
 
-Return ONLY a single JSON object — no prose, no markdown code fences, no explanation. The JSON must have these exact fields:
-- median (number, RM)
-- rangeLow (number)
-- rangeHigh (number)
-- n (number — count of recent sold listings you found, or your estimate of comps inferred from training)
-- source (string — set based on what came back from the search:
-    * If web_search returned eBay data: "eBay sold (live)"
-    * If web_search returned TCGPlayer data: "TCGPlayer (live)"
-    * If web_search returned PriceCharting data: "PriceCharting (live)"
-    * If web_search returned Cardmarket data: "Cardmarket EU (live)"
-    * If multiple sources contributed: "mixed (live)"
-    * If search returned nothing useful and you fell back to training: "estimated (training data, search returned no useful results)")
-- reprintRisk ("Low" / "Medium" / "High")
-- reprintReason (1-line string)
-- catalysts (array of 1-2 strings)
-- risks (array of 1-2 strings)
-- conditionAdjustment (1-line string explaining how condition affects value)
-- operatorNote (1-2 sentences in calm investment educator voice — anti-hype, framework-driven.
-    * If live data was found via search: write a calm calibrated note based on that data. Do NOT include the disclaimer.
-    * If the search returned no useful results and you fell back to training data, you MUST include the disclaimer: "Estimate only — search returned thin results. Verify with live comps in your Tuesday verdict report.")
+CRITICAL RULES:
+- DO NOT make up listings. If web_search returns nothing useful, return listings: [] and explain in diagnosticNote.
+- DO NOT estimate prices from training data. ONLY return listings you actually saw in search results.
+- DO NOT include graded listings if condition is raw. Filter at search time AND filter again before returning.
+- All prices must be USD numbers. Backend converts to MYR.
+- Return JSON ONLY. No prose before or after.`;
 
-If data is thin or your search returned only ambiguous results, be honest in operatorNote. Don't fabricate.
-
-Output the JSON object directly. Do not wrap it in code fences.`;
+// ---------- JSON extraction ----------
 
 function extractJson(text: string): unknown | null {
   const cleaned = text.trim();
@@ -111,23 +114,66 @@ function extractJson(text: string): unknown | null {
   return null;
 }
 
-function validateComps(data: unknown): data is CompsResult {
+// ---------- Validation ----------
+
+function isListing(x: unknown): x is Listing {
+  if (!x || typeof x !== "object") return false;
+  const li = x as Record<string, unknown>;
+  return (
+    typeof li.priceUSD === "number" &&
+    typeof li.title === "string" &&
+    typeof li.isGraded === "boolean" &&
+    (li.gradeIfGraded === null || typeof li.gradeIfGraded === "string") &&
+    typeof li.saleDate === "string" &&
+    typeof li.url === "string" &&
+    typeof li.soldFormat === "string" &&
+    (li.shippingNotes === null || typeof li.shippingNotes === "string")
+  );
+}
+
+function validateModelOutput(data: unknown): data is ModelOutput {
   if (!data || typeof data !== "object") return false;
   const d = data as Record<string, unknown>;
   return (
-    typeof d.median === "number" &&
-    typeof d.rangeLow === "number" &&
-    typeof d.rangeHigh === "number" &&
-    typeof d.n === "number" &&
-    typeof d.source === "string" &&
-    (d.reprintRisk === "Low" || d.reprintRisk === "Medium" || d.reprintRisk === "High") &&
-    typeof d.reprintReason === "string" &&
-    Array.isArray(d.catalysts) &&
-    Array.isArray(d.risks) &&
-    typeof d.conditionAdjustment === "string" &&
-    typeof d.operatorNote === "string"
+    Array.isArray(d.listings) &&
+    d.listings.every(isListing) &&
+    typeof d.searchQueryUsed === "string" &&
+    Array.isArray(d.venuesSearched) &&
+    d.venuesSearched.every((v) => typeof v === "string") &&
+    (d.variantWarning === null || typeof d.variantWarning === "string") &&
+    typeof d.diagnosticNote === "string"
   );
 }
+
+// ---------- Backend math (pure, deterministic) ----------
+
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function quantileOf(sortedAscending: number[], q: number): number {
+  const idx = Math.floor(sortedAscending.length * q);
+  return sortedAscending[Math.min(idx, sortedAscending.length - 1)];
+}
+
+// IQR outlier filter — keep prices within [Q1 − 1.5·IQR, Q3 + 1.5·IQR].
+// Skipped when fewer than 4 listings (IQR isn't meaningful).
+function dropOutliers(listings: Listing[]): Listing[] {
+  if (listings.length < 4) return listings;
+  const prices = listings.map((li) => li.priceUSD).sort((a, b) => a - b);
+  const q1 = quantileOf(prices, 0.25);
+  const q3 = quantileOf(prices, 0.75);
+  const iqr = q3 - q1;
+  const lo = q1 - 1.5 * iqr;
+  const hi = q3 + 1.5 * iqr;
+  return listings.filter((li) => li.priceUSD >= lo && li.priceUSD <= hi);
+}
+
+// ---------- Route ----------
 
 export async function POST(req: Request) {
   let body: {
@@ -156,6 +202,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "comps_failed" }, { status: 502 });
   }
 
+  // Build the eBay sold-listings verification URL from the request payload.
+  // 183454 = Pokemon TCG Individual Cards category; LH_Sold=1 + LH_Complete=1 = sold listings only.
+  // Constructed up-front so every response shape (manual-entry or computed) carries it.
+  const set = (body.set ?? "").trim();
+  const cardNumber = (body.cardNumber ?? "").trim();
+  console.log("[get-comps] eBay URL inputs:", { cardName, set, cardNumber });
+  const queryParts = [cardName, set, cardNumber].filter(Boolean);
+  const queryString = queryParts.join(" ").trim();
+  const ebayQuery = encodeURIComponent(queryString);
+  const ebayVerifyUrl = `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60`;
+
   const userPrompt = [
     `Card: ${cardName}`,
     body.set ? `Set: ${body.set}` : null,
@@ -179,7 +236,7 @@ export async function POST(req: Request) {
     const response = await client.messages.create(
       {
         model: "claude-opus-4-7",
-        max_tokens: 2048,
+        max_tokens: 4096, // up from 2048 — listings array can run large
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
         tools: [
@@ -195,8 +252,6 @@ export async function POST(req: Request) {
     );
 
     // Count actual server-side tool invocations from the response content blocks.
-    // (`response.tool_use_count` is not an SDK field — server tools surface as
-    // `server_tool_use` blocks and we count those.)
     const toolUseCount = (response.content || []).filter(
       (b) => b.type === "server_tool_use",
     ).length;
@@ -219,22 +274,99 @@ export async function POST(req: Request) {
     }
 
     const parsed = extractJson(finalText);
-    if (!validateComps(parsed)) {
-      console.error("[get-comps] JSON validation failed:", finalText.slice(0, 300));
+    if (!validateModelOutput(parsed)) {
+      console.error("[get-comps] model output failed schema validation:", finalText.slice(0, 300));
       return NextResponse.json({ error: "comps_failed" }, { status: 502 });
     }
 
-    // Build the eBay sold-listings verification URL from the request payload.
-    // 183454 = Pokemon TCG Individual Cards category; LH_Sold=1 + LH_Complete=1 = sold listings only.
-    const set = (body.set ?? "").trim();
-    const cardNumber = (body.cardNumber ?? "").trim();
-    console.log("[get-comps] eBay URL inputs:", { cardName, set, cardNumber });
-    const queryParts = [cardName, set, cardNumber].filter(Boolean);
-    const queryString = queryParts.join(" ").trim();
-    const ebayQuery = encodeURIComponent(queryString);
-    const ebayVerifyUrl = `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=183454&LH_Sold=1&LH_Complete=1&_ipg=60`;
+    console.log(
+      `[get-comps] model returned ${parsed.listings.length} listings, condition=${condition}`,
+    );
 
-    return NextResponse.json({ ...parsed, ebayVerifyUrl });
+    // ---- Manual-entry early return: model returned almost nothing ----
+    if (parsed.listings.length < 2) {
+      console.log("[get-comps] needsManualEntry — model returned <2 listings");
+      return NextResponse.json({
+        needsManualEntry: true,
+        reason: parsed.diagnosticNote,
+        operatorNote: "Live API returned insufficient comps. Manual Shiny App lookup recommended.",
+        ebayVerifyUrl,
+      });
+    }
+
+    // ---- Filter by condition (raw vs graded) ----
+    const isRawCondition = ["NM", "LP", "MP", "HP", "DMG"].includes(condition);
+    let filtered = parsed.listings.filter((li) => li.priceUSD > 0); // drop nonsense prices first
+    if (isRawCondition) {
+      filtered = filtered.filter((li) => !li.isGraded);
+    } else if (condition === "Graded") {
+      filtered = filtered.filter((li) => li.isGraded);
+    }
+    console.log(`[get-comps] after condition filter (isRaw=${isRawCondition}): ${filtered.length}`);
+
+    if (filtered.length === 0) {
+      console.log("[get-comps] needsManualEntry — all listings filtered out by condition");
+      return NextResponse.json({
+        needsManualEntry: true,
+        reason: `All listings filtered by condition (operator picked ${condition}, model returned only ${isRawCondition ? "graded" : "raw"} listings).`,
+        operatorNote: "Live API returned insufficient comps after condition filter. Manual Shiny App lookup recommended.",
+        ebayVerifyUrl,
+      });
+    }
+
+    // ---- IQR outlier filter ----
+    filtered = dropOutliers(filtered);
+    console.log(`[get-comps] after IQR outlier filter: ${filtered.length}`);
+
+    if (filtered.length === 0) {
+      console.log("[get-comps] needsManualEntry — IQR dropped all listings");
+      return NextResponse.json({
+        needsManualEntry: true,
+        reason: "All listings dropped as outliers — distribution too noisy for reliable median.",
+        operatorNote: "Live API returned insufficient comps after outlier filter. Manual Shiny App lookup recommended.",
+        ebayVerifyUrl,
+      });
+    }
+
+    // ---- Compute USD stats ----
+    const prices = filtered.map((li) => li.priceUSD);
+    const medianUSD = medianOf(prices);
+    const lowUSD = Math.min(...prices);
+    const highUSD = Math.max(...prices);
+
+    // ---- Sanity check ----
+    if (medianUSD < 1 || medianUSD > 10000) {
+      console.log(`[get-comps] needsManualEntry — implausible medianUSD=${medianUSD}`);
+      return NextResponse.json({
+        needsManualEntry: true,
+        reason: "Implausible USD median, manual review required",
+        operatorNote: `Computed median (USD ${medianUSD.toFixed(2)}) falls outside plausible range — manual Shiny App review required.`,
+        ebayVerifyUrl,
+      });
+    }
+
+    // ---- Convert USD → MYR ----
+    const medianMYR = Math.round(medianUSD * USD_MYR);
+    const lowMYR = Math.round(lowUSD * USD_MYR);
+    const highMYR = Math.round(highUSD * USD_MYR);
+
+    console.log(
+      `[get-comps] computed: medianUSD=${medianUSD.toFixed(2)}, medianMYR=${medianMYR}, range=[${lowMYR}, ${highMYR}], n=${filtered.length}`,
+    );
+
+    return NextResponse.json({
+      needsManualEntry: false,
+      medianMYR,
+      lowMYR,
+      highMYR,
+      medianUSD,
+      n: filtered.length,
+      trend: "Stable",
+      source: `eBay sold (live, n=${filtered.length})`,
+      operatorNote: parsed.diagnosticNote + (parsed.variantWarning ? " | " + parsed.variantWarning : ""),
+      ebayVerifyUrl,
+      rawListingsForAudit: filtered,
+    });
   } catch (err) {
     console.error("[get-comps] error:", err);
     console.error(`[get-comps] failed after ${Date.now() - t0}ms`);
