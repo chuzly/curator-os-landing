@@ -746,9 +746,61 @@
       background: rgba(10, 22, 40, 0.6);
     }
     .fundamentals-loading {
-      font-size: 13px; color: rgba(255,255,255,0.5);
-      text-align: center; padding: 40px 0;
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .fundamentals-loading-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #5DCAA5;
+      letter-spacing: 0.02em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .fundamentals-loading-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(93, 202, 165, 0.2);
+      border-top-color: #5DCAA5;
+      border-radius: 50%;
+      animation: fundLoadingSpin 0.9s linear infinite;
+    }
+    @keyframes fundLoadingSpin {
+      to { transform: rotate(360deg); }
+    }
+    .fundamentals-loading-status {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 16px;
+      min-height: 20px;
+      transition: opacity 0.4s ease;
       font-style: italic;
+    }
+    .fundamentals-loading-hint {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .fundamentals-loading-dots {
+      display: inline-block;
+      width: 24px;
+      text-align: left;
+    }
+    .fundamentals-loading-dots::after {
+      content: '';
+      animation: fundLoadingDots 1.4s steps(4, end) infinite;
+    }
+    @keyframes fundLoadingDots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
     }
     .fundamentals-thesis-block {
       margin-bottom: 24px;
@@ -1388,7 +1440,14 @@
         <!-- Fundamentals panel — populated by /api/get-fundamentals once asking + comps are set.
              Hidden until first successful response. Fail-silent on error (verdict still works). -->
         <section id="fundamentalsPanel" class="fundamentals-panel" hidden>
-          <div class="fundamentals-loading" hidden>Loading market analysis...</div>
+          <div class="fundamentals-loading" hidden>
+            <div class="fundamentals-loading-title">
+              <span class="fundamentals-loading-spinner"></span>
+              <span>Analyzing fundamentals<span class="fundamentals-loading-dots"></span></span>
+            </div>
+            <div class="fundamentals-loading-status" id="fundLoadingStatus">Reading market signals...</div>
+            <div class="fundamentals-loading-hint">~ 15-20 SECONDS</div>
+          </div>
 
           <div class="fundamentals-content" hidden>
             <div class="fundamentals-thesis-block">
@@ -3025,6 +3084,42 @@
         renderFundamentalsPanel();
       }
 
+      // Cycling status messages during the 18–25s Sonnet wait. Makes the
+      // loading state look intentional rather than frozen.
+      let fundamentalsStatusInterval = null;
+      const FUNDAMENTALS_LOADING_MESSAGES = [
+        "Reading market signals...",
+        "Triangulating sold comps...",
+        "Mapping era cohort + variant rarity...",
+        "Weighing demand drivers...",
+        "Scanning reprint risk + catalysts...",
+        "Composing thesis...",
+      ];
+
+      function startFundamentalsLoadingCycle() {
+        const statusEl = document.getElementById("fundLoadingStatus");
+        if (!statusEl) return;
+        let idx = 0;
+        statusEl.textContent = FUNDAMENTALS_LOADING_MESSAGES[0];
+        statusEl.style.opacity = "1";
+        if (fundamentalsStatusInterval) clearInterval(fundamentalsStatusInterval);
+        fundamentalsStatusInterval = setInterval(() => {
+          idx = (idx + 1) % FUNDAMENTALS_LOADING_MESSAGES.length;
+          statusEl.style.opacity = "0";
+          setTimeout(() => {
+            statusEl.textContent = FUNDAMENTALS_LOADING_MESSAGES[idx];
+            statusEl.style.opacity = "1";
+          }, 400);
+        }, 3500);
+      }
+
+      function stopFundamentalsLoadingCycle() {
+        if (fundamentalsStatusInterval) {
+          clearInterval(fundamentalsStatusInterval);
+          fundamentalsStatusInterval = null;
+        }
+      }
+
       function renderFundamentalsPanel() {
         const panel = document.getElementById("fundamentalsPanel");
         if (!panel) return;
@@ -3036,6 +3131,7 @@
           panel.hidden = true;
           if (loading) loading.hidden = true;
           if (content) content.hidden = true;
+          stopFundamentalsLoadingCycle();
           return;
         }
 
@@ -3044,11 +3140,13 @@
         if (state.fundamentals.loading) {
           if (loading) loading.hidden = false;
           if (content) content.hidden = true;
+          startFundamentalsLoadingCycle();
           return;
         }
 
         if (loading) loading.hidden = true;
         if (content) content.hidden = false;
+        stopFundamentalsLoadingCycle();
 
         document.getElementById("fundThesis").textContent = state.fundamentals.thesis || "";
 
