@@ -690,6 +690,116 @@
       line-height: 1.5;
     }
 
+    /* Fundamentals panel — Sonnet-generated thesis + 4 pillars + risks/catalysts + narrative.
+       Lives below the metric grid, above the Reserve CTA. Hidden until /api/get-fundamentals returns. */
+    .fundamentals-panel {
+      margin-top: 32px;
+      padding: 24px;
+      border: 1px solid rgba(93, 202, 165, 0.3);
+      background: rgba(10, 22, 40, 0.6);
+    }
+    .fundamentals-loading {
+      font-size: 13px; color: rgba(255,255,255,0.5);
+      text-align: center; padding: 40px 0;
+      font-style: italic;
+    }
+    .fundamentals-thesis-block {
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .fundamentals-thesis-block .label {
+      font-size: 10px; letter-spacing: 0.2em;
+      color: #5DCAA5; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .fundamentals-thesis-block p {
+      font-size: 14px; line-height: 1.6;
+      color: rgba(255,255,255,0.92);
+      margin: 0;
+    }
+    .fundamentals-pillars { margin-bottom: 24px; }
+    .fund-pillar-row {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .fund-pillar-row:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+    .fund-pillar-name {
+      font-size: 12px; letter-spacing: 0.1em;
+      text-transform: uppercase; font-weight: 600;
+      color: #fff;
+      display: inline-block; margin-right: 12px;
+    }
+    .fund-pillar-bar {
+      display: inline-block;
+      width: 200px; height: 8px;
+      background: rgba(255,255,255,0.08);
+      vertical-align: middle;
+      margin-right: 12px;
+    }
+    .fund-pillar-fill {
+      height: 100%; background: #5DCAA5;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+    .fund-pillar-score {
+      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+    .fund-pillar-reasons {
+      list-style: none; padding: 0; margin: 8px 0 0 0;
+      font-size: 12px; color: rgba(255,255,255,0.75);
+      line-height: 1.5;
+    }
+    .fund-pillar-reasons li {
+      padding-left: 16px; margin-bottom: 4px;
+      position: relative;
+    }
+    .fund-pillar-reasons li::before {
+      content: "•"; position: absolute; left: 4px;
+      color: #5DCAA5;
+    }
+    .fundamentals-risks-catalysts {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    @media (max-width: 700px) {
+      .fundamentals-risks-catalysts { grid-template-columns: 1fr; }
+      .fund-pillar-bar { width: 140px; }
+    }
+    .risks-block .label, .catalysts-block .label {
+      font-size: 10px; letter-spacing: 0.2em;
+      font-weight: 700; margin-bottom: 8px;
+    }
+    .risks-block .label { color: #F09595; }
+    .catalysts-block .label { color: #5DCAA5; }
+    .risks-block ul, .catalysts-block ul {
+      list-style: none; padding: 0; margin: 0;
+      font-size: 12px; line-height: 1.5;
+      color: rgba(255,255,255,0.85);
+    }
+    .risks-block li, .catalysts-block li {
+      padding: 6px 0 6px 12px;
+      border-left: 2px solid;
+      margin-bottom: 6px;
+    }
+    .risks-block li { border-color: #F09595; }
+    .catalysts-block li { border-color: #5DCAA5; }
+    .fundamentals-verdict-narrative {
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .fundamentals-verdict-narrative p {
+      font-size: 14px; line-height: 1.6;
+      color: #fff; font-weight: 500;
+      margin: 0; font-style: italic;
+    }
+
     /* Operator review interstitial — gates between API success and customer-facing verdict */
     .op-review-card {
       max-width: 640px;
@@ -1228,6 +1338,61 @@
           <span class="label" style="color:#F09595;">WALK ≥</span> <span id="walkAt">RM —</span>
         </div>
 
+        <!-- Fundamentals panel — populated by /api/get-fundamentals once asking + comps are set.
+             Hidden until first successful response. Fail-silent on error (verdict still works). -->
+        <section id="fundamentalsPanel" class="fundamentals-panel" hidden>
+          <div class="fundamentals-loading" hidden>Loading market analysis...</div>
+
+          <div class="fundamentals-content" hidden>
+            <div class="fundamentals-thesis-block">
+              <div class="label">THESIS</div>
+              <p id="fundThesis"></p>
+            </div>
+
+            <div class="fundamentals-pillars">
+              <div class="fund-pillar-row" data-pillar="scarcity">
+                <div class="fund-pillar-name">Scarcity</div>
+                <div class="fund-pillar-bar"><div class="fund-pillar-fill" id="pillarScarcityFill"></div></div>
+                <div class="fund-pillar-score" id="pillarScarcityScore">— / 40</div>
+                <ul class="fund-pillar-reasons" id="pillarScarcityReasons"></ul>
+              </div>
+              <div class="fund-pillar-row" data-pillar="demand">
+                <div class="fund-pillar-name">Demand</div>
+                <div class="fund-pillar-bar"><div class="fund-pillar-fill" id="pillarDemandFill"></div></div>
+                <div class="fund-pillar-score" id="pillarDemandScore">— / 30</div>
+                <ul class="fund-pillar-reasons" id="pillarDemandReasons"></ul>
+              </div>
+              <div class="fund-pillar-row" data-pillar="condition">
+                <div class="fund-pillar-name">Condition</div>
+                <div class="fund-pillar-bar"><div class="fund-pillar-fill" id="pillarConditionFill"></div></div>
+                <div class="fund-pillar-score" id="pillarConditionScore">— / 20</div>
+                <ul class="fund-pillar-reasons" id="pillarConditionReasons"></ul>
+              </div>
+              <div class="fund-pillar-row" data-pillar="timing">
+                <div class="fund-pillar-name">Timing</div>
+                <div class="fund-pillar-bar"><div class="fund-pillar-fill" id="pillarTimingFill"></div></div>
+                <div class="fund-pillar-score" id="pillarTimingScore">— / 10</div>
+                <ul class="fund-pillar-reasons" id="pillarTimingReasons"></ul>
+              </div>
+            </div>
+
+            <div class="fundamentals-risks-catalysts">
+              <div class="risks-block">
+                <div class="label">⚠ RISKS</div>
+                <ul id="fundRisks"></ul>
+              </div>
+              <div class="catalysts-block">
+                <div class="label">↗ CATALYSTS</div>
+                <ul id="fundCatalysts"></ul>
+              </div>
+            </div>
+
+            <div class="fundamentals-verdict-narrative">
+              <p id="fundVerdictNarrative"></p>
+            </div>
+          </div>
+        </section>
+
         <!-- CTA -->
         <button id="reserveBtn" class="reserve-cta" type="button">Reserve your written verdict →</button>
 
@@ -1401,6 +1566,18 @@
         tileOverrides: new Set(), // 'median' | 'range' | 'reprint' | 'opNote' — tap-to-edit in auto mode
         eduOpen: false,
         lastTier: null,
+
+        // /api/get-fundamentals output. Loaded asynchronously after asking + comps are set.
+        // Panel renders only when thesis is non-null AND no error.
+        fundamentals: {
+          thesis: null,
+          pillars: null,
+          risks: [],
+          catalysts: [],
+          verdictNarrative: null,
+          loading: false,
+          error: null,
+        },
 
         customer: { name: "", insta: "", email: "", whatsapp: "", userType: "" },
         signupNumber: null,
@@ -1984,6 +2161,12 @@
 
         // Reserve CTA: only enabled when tier is computable
         els.reserveBtn.disabled = !tier;
+
+        // Fundamentals panel — re-render from current state.fundamentals (no fetch),
+        // then schedule a debounced fetch if asking + comps are ready. The debounce
+        // dedupes rapid renders triggered by every keystroke.
+        renderFundamentalsPanel();
+        scheduleFundamentalsFetch();
       }
 
       // ============================================================
@@ -2021,6 +2204,16 @@
         state.tileOverrides.clear();
         state.eduOpen = false;
         state.lastTier = null;
+
+        state.fundamentals = {
+          thesis: null,
+          pillars: null,
+          risks: [],
+          catalysts: [],
+          verdictNarrative: null,
+          loading: false,
+          error: null,
+        };
 
         state.customer = { name: "", insta: "", email: "", whatsapp: "", userType: "" };
         state.signupNumber = null;
@@ -2495,6 +2688,141 @@
         setCompsState("idle");
         showScreen("identify");
       });
+
+      // ============================================================
+      // Fundamentals panel — /api/get-fundamentals fetch + render
+      // ============================================================
+      // Debounced trigger: any state change that touches asking / profile /
+      // comps schedules a fetch 500ms after the last change. Skipped silently
+      // if asking or comps median are missing — fundamentals needs both.
+      let fundamentalsDebounceTimer = null;
+      let fundamentalsRequestId = 0;
+
+      function scheduleFundamentalsFetch() {
+        if (state.screen !== "verdict") return;
+        if (!state.asking || state.asking <= 0) return;
+        if (!state.comps.median) return;
+        if (fundamentalsDebounceTimer) clearTimeout(fundamentalsDebounceTimer);
+        fundamentalsDebounceTimer = setTimeout(() => { fetchFundamentals(); }, 500);
+      }
+
+      async function fetchFundamentals() {
+        // Compute composite from current pillar score inputs (educator panel).
+        const composite =
+          (num(els.pA) ?? 0) + (num(els.pB) ?? 0) +
+          (num(els.pC) ?? 0) + (num(els.pD) ?? 0);
+
+        const myRequestId = ++fundamentalsRequestId;
+        state.fundamentals.loading = true;
+        state.fundamentals.error = null;
+        renderFundamentalsPanel();
+
+        try {
+          const res = await fetch("/api/get-fundamentals", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cardName: state.card.cardName,
+              set: state.card.set,
+              cardNumber: state.card.cardNumber,
+              variant: state.card.variant,
+              era: state.card.era,
+              language: state.card.language,
+              condition: state.card.condition,
+              askingPrice: state.asking,
+              comps: {
+                medianMYR: state.comps.median,
+                lowMYR: state.comps.rangeLow,
+                highMYR: state.comps.rangeHigh,
+                n: state.comps.n,
+                source: state.comps.source,
+              },
+              profile: state.profile,
+              compositeScore: composite,
+            }),
+          });
+
+          // If a newer request fired while this one was in flight, ignore the stale result.
+          if (myRequestId !== fundamentalsRequestId) return;
+
+          if (!res.ok) throw new Error(`fundamentals API ${res.status}`);
+          const data = await res.json();
+
+          state.fundamentals.thesis = data.thesis;
+          state.fundamentals.pillars = data.pillars;
+          state.fundamentals.risks = Array.isArray(data.risks) ? data.risks : [];
+          state.fundamentals.catalysts = Array.isArray(data.catalysts) ? data.catalysts : [];
+          state.fundamentals.verdictNarrative = data.verdictNarrative;
+          state.fundamentals.loading = false;
+          state.fundamentals.error = null;
+        } catch (err) {
+          if (myRequestId !== fundamentalsRequestId) return;
+          console.error("[verdict] fundamentals fetch failed:", err);
+          state.fundamentals.loading = false;
+          state.fundamentals.error = err instanceof Error ? err.message : String(err);
+        }
+
+        renderFundamentalsPanel();
+      }
+
+      function renderFundamentalsPanel() {
+        const panel = document.getElementById("fundamentalsPanel");
+        if (!panel) return;
+        const loading = panel.querySelector(".fundamentals-loading");
+        const content = panel.querySelector(".fundamentals-content");
+
+        // Fail-silent: hide the entire panel on error or before first success.
+        if (state.fundamentals.error || (!state.fundamentals.loading && !state.fundamentals.thesis)) {
+          panel.hidden = true;
+          if (loading) loading.hidden = true;
+          if (content) content.hidden = true;
+          return;
+        }
+
+        panel.hidden = false;
+
+        if (state.fundamentals.loading) {
+          if (loading) loading.hidden = false;
+          if (content) content.hidden = true;
+          return;
+        }
+
+        if (loading) loading.hidden = true;
+        if (content) content.hidden = false;
+
+        document.getElementById("fundThesis").textContent = state.fundamentals.thesis || "";
+
+        const p = state.fundamentals.pillars;
+        if (p) {
+          const renderPillar = (key, max) => {
+            const cap = key.charAt(0).toUpperCase() + key.slice(1);
+            const pillar = p[key];
+            if (!pillar) return;
+            const score = pillar.score ?? 0;
+            const pct = Math.max(0, Math.min(100, (score / max) * 100));
+            const fill = document.getElementById(`pillar${cap}Fill`);
+            const scoreEl = document.getElementById(`pillar${cap}Score`);
+            const reasonsEl = document.getElementById(`pillar${cap}Reasons`);
+            if (fill) fill.style.width = `${pct}%`;
+            if (scoreEl) scoreEl.textContent = `${score} / ${max}`;
+            if (reasonsEl) {
+              reasonsEl.innerHTML = (pillar.reasons || [])
+                .map((r) => `<li>${escapeAttr(r)}</li>`).join("");
+            }
+          };
+          renderPillar("scarcity", 40);
+          renderPillar("demand", 30);
+          renderPillar("condition", 20);
+          renderPillar("timing", 10);
+        }
+
+        document.getElementById("fundRisks").innerHTML =
+          (state.fundamentals.risks || []).map((r) => `<li>${escapeAttr(r)}</li>`).join("");
+        document.getElementById("fundCatalysts").innerHTML =
+          (state.fundamentals.catalysts || []).map((c) => `<li>${escapeAttr(c)}</li>`).join("");
+        document.getElementById("fundVerdictNarrative").textContent =
+          state.fundamentals.verdictNarrative || "";
+      }
 
       // Asking input
       els.vAsking.addEventListener("input", () => {
