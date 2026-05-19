@@ -323,4 +323,27 @@ export async function POST(req: Request) {
   const textBlocks = response.content.filter(
     (b): b is Anthropic.TextBlock => b.type === "text",
   );
-  const finalT
+  const finalText = textBlocks.length ? textBlocks[textBlocks.length - 1].text : "";
+  if (!finalText) {
+    console.error("[get-fundamentals] no text block in response");
+    return NextResponse.json({ error: "fundamentals_failed" }, { status: 502 });
+  }
+
+  const parsed = extractJson(finalText);
+  if (!validateFundamentalsOutput(parsed)) {
+    console.error(
+      "[get-fundamentals] schema validation failed:",
+      finalText.slice(0, 300),
+    );
+    return NextResponse.json({ error: "fundamentals_failed" }, { status: 502 });
+  }
+
+  console.log("[get-fundamentals] returning success: thesis len:", parsed.thesis.length, ", pillar scores:", {
+    scarcity: parsed.pillars.scarcity.score,
+    demand: parsed.pillars.demand.score,
+    condition: parsed.pillars.condition.score,
+    timing: parsed.pillars.timing.score,
+  });
+
+  return NextResponse.json(parsed);
+}
