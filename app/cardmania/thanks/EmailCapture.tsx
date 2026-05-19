@@ -18,7 +18,7 @@ export default function EmailCapture() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "hero", email }),
+        body: JSON.stringify({ type: "hero", email, source: "cardmania" }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

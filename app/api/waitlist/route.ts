@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
 export const runtime = "nodejs";
 
-type HeroPayload = { type: "hero"; email: string };
+type HeroPayload = { type: "hero"; email: string; source?: string };
 type CollectorPayload = {
   type: "collector";
   email: string;
   focus: string;
   budget: string;
   painPoint: string;
+  source?: string;
 };
 type VendorPayload = {
   type: "vendor";
@@ -18,6 +20,7 @@ type VendorPayload = {
   city: string;
   turnover: string;
   painPoint: string;
+  source?: string;
 };
 type Payload = HeroPayload | CollectorPayload | VendorPayload;
 
@@ -68,6 +71,7 @@ function escapeHtml(s: string) {
 
 function buildBody(p: Payload) {
   const rows: [string, string][] = [["Type", p.type], ["Email", p.email]];
+  if (p.source) rows.push(["Source", p.source]);
   if (p.type === "collector") {
     rows.push(["Focus", p.focus], ["Budget", p.budget], ["Pain point", p.painPoint]);
   } else if (p.type === "vendor") {
@@ -103,58 +107,76 @@ export async function POST(req: Request) {
     );
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const notifyEmail = process.env.NOTIFY_EMAIL;
-  const fromEmail = process.env.FROM_EMAIL ?? "Curator OS <onboarding@resend.dev>";
+  // Step 1: Supabase write — PRIMARY storage path
+  // Even if Resend later fails, the subscriber is safely captured.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  console.log(
-    "[waitlist] env check — RESEND_API_KEY:",
-    apiKey ? `${apiKey.slice(0, 10)}...` : "(missing)",
-    "NOTIFY_EMAIL:",
-    notifyEmail ?? "(missing)",
-    "FROM_EMAIL:",
-    fromEmail,
-  );
-
-  if (!apiKey || !notifyEmail) {
-    console.error("[waitlist] missing RESEND_API_KEY or NOTIFY_EMAIL.");
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("[waitlist] missing SUPABASE_URL or SERVICE_ROLE_KEY env vars.");
     return NextResponse.json(
       { error: "Waitlist is temporarily unavailable. Please try again shortly." },
       { status: 500 },
     );
   }
 
-  const resend = new Resend(apiKey);
-  const { text, html } = buildBody(payload);
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
 
-  console.log("[waitlist] calling resend.emails.send for", payload.email, "type=", payload.type);
+  const userAgent = req.headers.get("user-agent") ?? null;
 
-  let result;
-  try {
-    result = await resend.emails.send({
-      from: fromEmail,
-      to: [notifyEmail],
-      replyTo: payload.email,
-      subject: buildSubject(payload),
-      text,
-      html,
-    });
-  } catch (err) {
-    console.error("[waitlist] resend.emails.send threw:", err);
+  const insertRow: Record<string, unknown> = {
+    email: payload.email,
+    signup_type: payload.type,
+    source: payload.source ?? "main",
+    user_agent: userAgent,
+  };
+
+  if (payload.type === "collector") {
+    insertRow.focus = payload.focus;
+    insertRow.budget = payload.budget;
+    insertRow.pain_point = payload.painPoint;
+  } else if (payload.type === "vendor") {
+    insertRow.business_name = payload.businessName;
+    insertRow.city = payload.city;
+    insertRow.turnover = payload.turnover;
+    insertRow.pain_point = payload.painPoint;
+  }
+
+  const { error: dbError } = await supabase
+    .from("waitlist_subscribers")
+    .insert(insertRow);
+
+  if (dbError) {
+    console.error("[waitlist] supabase insert error:", dbError);
     return NextResponse.json(
-      { error: "Could not record your signup. Please try again." },
-      { status: 500 },
+      { error: "Could not save your signup. Please try again." },
+      { status: 502 },
     );
   }
 
-  console.log("[waitlist] resend response:", JSON.stringify(result));
+  // Step 2: Resend notification — SECONDARY, non-blocking
+  // If this fails, signup is still saved in Supabase. We still return success.
+  const apiKey = process.env.RESEND_API_KEY;
+  const notifyEmail = process.env.NOTIFY_EMAIL;
+  const fromEmail = process.env.FROM_EMAIL ?? "Curator OS <onboarding@resend.dev>";
 
-  if (result?.error) {
-    console.error("[waitlist] resend returned error:", result.error);
-    return NextResponse.json(
-      { error: "Could not record your signup. Please try again." },
-      { status: 502 },
-    );
+  if (apiKey && notifyEmail) {
+    try {
+      const resend = new Resend(apiKey);
+      const { text, html } = buildBody(payload);
+      await resend.emails.send({
+        from: fromEmail,
+        to: [notifyEmail],
+        replyTo: payload.email,
+        subject: buildSubject(payload),
+        text,
+        html,
+      });
+    } catch (err) {
+      console.error("[waitlist] resend notification failed (non-blocking):", err);
+    }
   }
 
   return NextResponse.json({ ok: true });
