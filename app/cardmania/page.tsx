@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Single = { value: string; label: string };
 
@@ -140,7 +141,7 @@ export default function CardManiaForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.wantsUpdates) {
-      setError("Please answer the last question (want updates?).");
+      setError("请回答最后一题 / Please answer the last question.");
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
       return;
     }
@@ -166,151 +167,185 @@ export default function CardManiaForm() {
   }
 
   return (
-    <main className="min-h-screen bg-surface">
-      <header className="border-b border-rule bg-white">
-        <div className="container-tight py-6">
-          <div className="flex items-center gap-3">
-            <div className="h-2.5 w-2.5 bg-accent" aria-hidden />
-            <span className="font-mono text-xs uppercase tracking-[0.18em] text-navy-400">
-              Curator OS · Card Mania 2026
-            </span>
+    <main className="brand-texture relative min-h-screen bg-brand-bg text-brand-cream font-brand-sans">
+      {/* Topbar */}
+      <header className="sticky top-0 z-50 border-b border-brand-gold/25 bg-brand-bg/95 backdrop-blur">
+        <div className="mx-auto flex max-w-brand-content items-center justify-between px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3.5">
+            <Image
+              src="/brand/seal-zou.png"
+              alt="邹氏卡藏 seal"
+              width={56}
+              height={56}
+              className="h-14 w-14 object-contain"
+              priority
+            />
+            <div className="flex flex-col">
+              <span className="font-brand-brush text-2xl leading-none text-brand-cream">
+                邹氏卡藏
+              </span>
+              <span className="mt-0.5 font-brand-label text-[10px] font-semibold leading-tight tracking-[0.22em] text-brand-gold">
+                CHOU&apos;S TCG LEDGER
+              </span>
+            </div>
           </div>
+          <span className="font-brand-label text-[10px] font-semibold tracking-[0.22em] text-brand-gold uppercase">
+            Card Mania · 2026
+          </span>
         </div>
       </header>
 
-      <section className="bg-white border-b border-rule">
-        <div className="container-tight py-12 sm:py-16">
-          <h1 className="max-w-3xl text-balance text-3xl font-semibold leading-tight tracking-tightish text-navy sm:text-4xl">
-            60-second collector survey.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-navy-400">
-            We&apos;re building a market intelligence tool for serious Pokemon TCG collectors across Asia-Pacific. Help us understand what matters.
-            <br />
-            <span className="text-navy-500">我们在做 Pokemon TCG 收藏家的市场情报工具, 帮个忙, 30秒就好。</span>
-          </p>
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-brand-gold/15">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(ellipse at 25% 0%, rgba(200,161,90,0.14), transparent 55%), radial-gradient(ellipse at 80% 100%, rgba(183,50,36,0.10), transparent 50%)",
+          }}
+        />
+        {/* Decorative compass mark — top right */}
+        <div aria-hidden className="brand-compass-mark" style={{ top: "-90px", right: "-90px" }} />
+        {/* Decorative compass mark — bottom left */}
+        <div aria-hidden className="brand-compass-mark" style={{ bottom: "-110px", left: "-110px", width: "320px", height: "320px" }} />
+
+        <div className="relative mx-auto grid max-w-brand-content gap-10 px-5 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1fr_auto] lg:gap-16">
+          {/* Left — main content */}
+          <div className="relative z-10">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-gold/45 bg-brand-gold/10 px-4 py-2">
+              <span className="font-brand-label text-[11px] font-semibold tracking-[0.34em] uppercase text-brand-gold">
+                30-Sec Collector Survey
+              </span>
+            </div>
+            <h1 className="font-brand-editorial text-4xl font-black leading-[1.15] tracking-[0.04em] text-brand-cream sm:text-5xl md:text-6xl">
+              你怎么挑卡 ·<br className="sm:hidden" /> 我们怎么挑工具。
+            </h1>
+            <p className="mt-5 font-brand-label text-xs font-semibold tracking-[0.24em] uppercase text-brand-gold">
+              How you buy · How we build
+            </p>
+            <p className="mt-7 max-w-2xl text-lg font-medium leading-relaxed text-brand-cream/90">
+              我们在做一个工具帮 Pokemon 卡友判断这张卡值不值得买。
+              借30秒, 让你的反馈塑造我们做什么。
+            </p>
+            <p className="mt-3 max-w-2xl text-base leading-relaxed text-brand-cream/75">
+              Building a tool that helps Pokemon TCG collectors decide if a card
+              is worth buying. 30 seconds of your feedback shapes what we build.
+            </p>
+          </div>
+
+          {/* Right — brand quote panel (decorative) */}
+          <aside className="relative hidden lg:flex">
+            <div className="brand-rule-vertical mr-8 self-stretch" />
+            <div className="flex flex-col justify-center">
+              <p className="font-brand-en text-[10px] font-bold tracking-[0.34em] uppercase text-brand-gold/90">
+                ─ Editorial ─
+              </p>
+              <div className="mt-5 space-y-1.5 font-brand-en text-sm font-semibold tracking-[0.18em] uppercase text-brand-cream/95">
+                <p>The market moves.</p>
+                <p>The ledger remains.</p>
+                <p>Every card has a reason.</p>
+              </div>
+              <p className="mt-4 font-brand-en text-xs tracking-[0.15em] text-brand-gold/80">— Chou</p>
+            </div>
+          </aside>
         </div>
       </section>
 
-      <form onSubmit={handleSubmit} className="container-tight py-10 sm:py-14">
-        <Question
-          number={1}
-          en="Your age range"
-          zh="你的年龄段"
-          required
-        >
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="brand-ledger-lines relative mx-auto max-w-brand-content px-5 py-12 sm:px-6 sm:py-16">
+        <div className="relative z-10">
+        <Question number={1} en="Your age range" zh="你的年龄段" required>
           <SingleGrid options={Q1_AGE} selected={form.age} onSelect={(v) => setSingle("age", v)} cols={2} />
         </Question>
 
-        <Question
-          number={2}
-          en="What kind of collector are you?"
-          zh="你是哪种收藏家?"
-          required
-        >
+        <Question number={2} en="What kind of collector are you?" zh="你是哪种收藏家?" required>
           <SingleGrid options={Q2_TYPE} selected={form.collectorType} onSelect={(v) => setSingle("collectorType", v)} cols={1} />
         </Question>
 
-        <Question
-          number={3}
-          en="Monthly spend on PTCG"
-          zh="每月花多少钱在 PTCG?"
-          required
-        >
+        <Question number={3} en="Monthly spend on PTCG" zh="每月花多少钱在 PTCG?" required>
           <SingleGrid options={Q3_SPEND} selected={form.monthlySpend} onSelect={(v) => setSingle("monthlySpend", v)} cols={1} />
         </Question>
 
-        <Question
-          number={4}
-          en="How do you check Pokemon card prices? (Pick all that apply)"
-          zh="你怎么查卡的价钱? (可多选)"
-        >
+        <Question number={4} en="How do you check Pokemon card prices? (Pick all that apply)" zh="你怎么查卡的价钱? (可多选)">
           <MultiGrid options={Q4_APPS} selected={form.apps} onToggle={(v) => toggleMulti("apps", v)} cols={2} />
         </Question>
 
-        <Question
-          number={5}
-          en="Do you buy Japanese cards?"
-          zh="你买日文卡吗?"
-        >
+        <Question number={5} en="Do you buy Japanese cards?" zh="你买日文卡吗?">
           <SingleGrid options={Q5_JP} selected={form.jpCards} onSelect={(v) => setSingle("jpCards", v)} cols={1} />
         </Question>
 
-        <Question
-          number={6}
-          en="Have you bought from mainland Chinese sellers (闲鱼 / 集换社)?"
-          zh="你从大陆卖家买过卡吗?"
-        >
+        <Question number={6} en="Have you bought from mainland Chinese sellers (闲鱼 / 集换社)?" zh="你从大陆卖家买过卡吗?">
           <SingleGrid options={Q6_MAINLAND} selected={form.mainlandSellers} onSelect={(v) => setSingle("mainlandSellers", v)} cols={1} />
         </Question>
 
-        <Question
-          number={7}
-          en="Would you pay monthly for a tool that gives a BUY / WALK verdict on cards?"
-          zh="如果有工具直接告诉你这张卡值不值买, 你愿意付费吗?"
-        >
+        <Question number={7} en="Would you pay monthly for a tool that tells you if a card is worth buying?" zh="如果有工具直接告诉你这张卡值不值得买, 你愿意付费吗?">
           <SingleGrid options={Q7_PAY} selected={form.payWillingness} onSelect={(v) => setSingle("payWillingness", v)} cols={1} />
         </Question>
 
-        <Question
-          number={8}
-          en="What language do you prefer for tools?"
-          zh="你希望工具用什么语言?"
-        >
+        <Question number={8} en="What language do you prefer for tools?" zh="你希望工具用什么语言?">
           <SingleGrid options={Q8_LANG} selected={form.languagePref} onSelect={(v) => setSingle("languagePref", v)} cols={3} />
         </Question>
 
-        <Question
-          number={9}
-          en="Biggest pain when buying cards? (Pick up to 3)"
-          zh="买卡最头疼的是什么? (最多选3个)"
-        >
+        <Question number={9} en="Biggest pain when buying cards? (Pick up to 3)" zh="买卡最头疼的是什么? (最多选3个)">
           <MultiGrid options={Q9_PAIN} selected={form.painPoints} onToggle={(v) => toggleMulti("painPoints", v)} cols={1} maxSelect={3} />
           {form.painPoints.includes("other") && (
             <input
               type="text"
               value={form.painOther}
               onChange={(e) => setSingle("painOther", e.target.value)}
-              placeholder="Tell us / 告诉我们..."
-              className="input-base mt-4"
+              placeholder="告诉我们 / Tell us..."
+              className="mt-4 w-full rounded-sm border border-brand-gold/35 bg-brand-panel px-4 py-3.5 text-base text-brand-cream placeholder:text-brand-cream/45 focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
               maxLength={200}
             />
           )}
         </Question>
 
-        <Question
-          number={10}
-          en="Want updates when Curator OS launches?"
-          zh="想收到 Curator OS 发布更新吗?"
-          required
-        >
+        <Question number={10} en="Want updates when Curator OS launches?" zh="想收到 Curator OS 发布更新吗?" required>
           <SingleGrid options={Q10_UPDATES} selected={form.wantsUpdates} onSelect={(v) => setSingle("wantsUpdates", v)} cols={3} />
         </Question>
 
         {error && (
-          <div className="mt-8 border-l-4 border-accent bg-white px-4 py-3 text-sm text-accent">
+          <div className="mt-8 border-l-4 border-brand-red-bright bg-brand-panel-warm px-5 py-4 text-base text-brand-red-bright">
             {error}
           </div>
         )}
 
-        <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="mt-14 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <button
             type="submit"
             disabled={submitting}
-            className="btn-primary w-full sm:w-auto"
+            className="relative w-full overflow-hidden rounded-sm px-8 py-4 font-brand-sans text-lg font-black tracking-wide text-brand-bg transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            style={{
+              background:
+                "linear-gradient(180deg, #E2C58E, #C8A15A 50%, #8B6E3C)",
+              boxShadow:
+                "0 4px 22px rgba(200,161,90,0.4), 0 0 0 1px rgba(245,235,210,0.2) inset",
+            }}
           >
-            {submitting ? "Submitting..." : "Submit / 提交"}
+            {submitting ? "提交中... / Submitting..." : "提交 / Submit"}
           </button>
-          <p className="text-xs text-navy-400">
-            Your responses help shape Curator OS. Thank you. / 谢谢你的时间。
+          <p className="font-brand-label text-[11px] font-semibold tracking-[0.22em] uppercase text-brand-cream/65">
+            谢谢你的时间 · Thank you for your time
           </p>
+        </div>
         </div>
       </form>
 
-      <footer className="border-t border-rule bg-white">
-        <div className="container-tight py-8">
-          <p className="text-xs text-navy-400">
-            Curator OS — Market intelligence for serious Pokemon TCG collectors. Built by 邹氏卡藏.
+      {/* Footer */}
+      <footer className="border-t border-brand-gold/20 bg-brand-bg-deep">
+        <div className="mx-auto max-w-brand-content px-5 py-14 sm:px-6">
+          <p className="font-brand-editorial text-2xl font-black tracking-[0.08em] text-brand-cream">
+            每一张入藏, 都要有理由。
           </p>
+          <p className="mt-3 font-brand-en text-sm font-medium tracking-[0.18em] uppercase text-brand-cream/75">
+            Every card has a reason — Chou
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 font-brand-label text-[11px] font-semibold tracking-[0.22em] uppercase text-brand-cream/65">
+            <span>邹氏卡藏 · Chou&apos;s TCG Ledger</span>
+            <span className="text-brand-gold/50">·</span>
+            <span>Card Mania 2026 · Kuala Lumpur · MY</span>
+          </div>
         </div>
       </footer>
     </main>
@@ -331,20 +366,24 @@ function Question({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="mb-10 border-t border-rule pt-8 first:border-t-0 first:pt-0">
-      <legend className="mb-4 flex items-baseline gap-3">
-        <span className="font-mono text-xs uppercase tracking-[0.18em] text-navy-400">
+    <fieldset className="mb-14 border-t border-brand-gold/20 pt-10 first:border-t-0 first:pt-0">
+      <legend className="mb-6 flex items-baseline gap-4">
+        <span className="font-brand-label text-[11px] font-bold tracking-[0.22em] uppercase text-brand-gold">
           Q{String(number).padStart(2, "0")}
         </span>
         {required && (
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
-            Required
+          <span className="font-brand-label text-[10px] font-bold tracking-[0.22em] uppercase text-brand-red-bright">
+            必答 · Required
           </span>
         )}
       </legend>
-      <div className="mb-5">
-        <p className="text-lg font-medium text-navy">{en}</p>
-        <p className="text-sm text-navy-400">{zh}</p>
+      <div className="mb-7">
+        <p className="font-brand-sans text-xl font-bold leading-snug tracking-wide text-brand-cream sm:text-2xl">
+          {zh}
+        </p>
+        <p className="mt-2 text-base font-normal leading-relaxed text-brand-cream/75">
+          {en}
+        </p>
       </div>
       {children}
     </fieldset>
@@ -369,7 +408,7 @@ function SingleGrid({
       ? "grid-cols-2"
       : "grid-cols-1 sm:grid-cols-3";
   return (
-    <div className={`grid gap-2 ${grid}`}>
+    <div className={`grid gap-3 ${grid}`}>
       {options.map((opt) => {
         const isOn = selected === opt.value;
         return (
@@ -377,10 +416,10 @@ function SingleGrid({
             key={opt.value}
             type="button"
             onClick={() => onSelect(opt.value)}
-            className={`min-h-[52px] w-full rounded-none border px-4 py-3 text-left text-sm transition-colors ${
+            className={`min-h-[60px] w-full rounded-sm border px-5 py-4 text-left text-base font-medium transition-all ${
               isOn
-                ? "border-navy bg-navy text-white"
-                : "border-navy-200 bg-white text-navy hover:border-navy"
+                ? "border-brand-gold bg-brand-gold/20 text-brand-cream shadow-[0_0_0_1px_rgba(200,161,90,0.4)]"
+                : "border-brand-gold/25 bg-brand-panel text-brand-cream/95 hover:border-brand-gold/65 hover:bg-brand-panel-warm hover:text-brand-cream"
             }`}
           >
             {opt.label}
@@ -411,7 +450,7 @@ function MultiGrid({
       ? "grid-cols-1 sm:grid-cols-2"
       : "grid-cols-1 sm:grid-cols-3";
   return (
-    <div className={`grid gap-2 ${grid}`}>
+    <div className={`grid gap-3 ${grid}`}>
       {options.map((opt) => {
         const isOn = selected.includes(opt.value);
         const atLimit = !isOn && maxSelect !== undefined && selected.length >= maxSelect;
@@ -424,24 +463,22 @@ function MultiGrid({
               onToggle(opt.value);
             }}
             disabled={atLimit}
-            className={`min-h-[52px] w-full rounded-none border px-4 py-3 text-left text-sm transition-colors ${
+            className={`min-h-[60px] w-full rounded-sm border px-5 py-4 text-left text-base font-medium transition-all ${
               isOn
-                ? "border-navy bg-navy text-white"
+                ? "border-brand-gold bg-brand-gold/20 text-brand-cream shadow-[0_0_0_1px_rgba(200,161,90,0.4)]"
                 : atLimit
-                ? "border-navy-100 bg-navy-50 text-navy-300 cursor-not-allowed"
-                : "border-navy-200 bg-white text-navy hover:border-navy"
+                ? "cursor-not-allowed border-brand-gold/10 bg-brand-panel/50 text-brand-cream/30"
+                : "border-brand-gold/25 bg-brand-panel text-brand-cream/95 hover:border-brand-gold/65 hover:bg-brand-panel-warm hover:text-brand-cream"
             }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-3">
               <span
-                className={`inline-block h-3 w-3 border ${
-                  isOn ? "border-white bg-white" : "border-navy-300"
+                className={`inline-block h-3.5 w-3.5 border-2 ${
+                  isOn ? "border-brand-gold bg-brand-gold/30" : "border-brand-gold/50"
                 }`}
                 aria-hidden
               >
-                {isOn && (
-                  <span className="block h-full w-full bg-accent" />
-                )}
+                {isOn && <span className="block h-full w-full bg-brand-red-bright" />}
               </span>
               {opt.label}
             </span>

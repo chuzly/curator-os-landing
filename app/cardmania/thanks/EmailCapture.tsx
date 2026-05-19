@@ -34,8 +34,8 @@ export default function EmailCapture() {
 
   if (status === "success") {
     return (
-      <div className="border-l-4 border-navy bg-white px-4 py-3 text-sm text-navy">
-        You&apos;re on the list. 已加入名单, 之后再联系你。
+      <div className="border-l-2 border-brand-gold bg-brand-panel-warm px-5 py-4 text-sm text-brand-cream">
+        ✓ 已加入名单 · You&apos;re on the list. 之后再联系你。
       </div>
     );
   }
@@ -60,17 +60,24 @@ export default function EmailCapture() {
         }}
         placeholder="you@domain.com"
         disabled={status === "submitting"}
-        className="input-base flex-1"
+        className="flex-1 rounded-sm border border-brand-gold/30 bg-brand-panel px-4 py-3.5 text-sm text-brand-cream placeholder:text-brand-cream/35 focus:border-brand-gold focus:outline-none focus:ring-1 focus:ring-brand-gold"
       />
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="btn-primary"
+        className="group relative rounded-sm px-6 py-3.5 font-brand-sans text-sm font-bold text-brand-bg transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+        style={{
+          background: "linear-gradient(180deg, #E2C58E, #C8A15A 50%, #8B6E3C)",
+          boxShadow:
+            "0 4px 22px rgba(200,161,90,0.4), 0 0 0 1px rgba(245,235,210,0.2) inset",
+        }}
       >
-        {status === "submitting" ? "Saving..." : "Notify me / 通知我"}
+        {status === "submitting" ? "保存中..." : "通知我 / Notify me"}
       </button>
       {status === "error" && (
-        <p className="w-full text-xs text-accent sm:w-auto">{errorMsg}</p>
+        <p className="w-full font-brand-label text-[10px] tracking-[0.18em] uppercase text-brand-red-bright sm:w-auto">
+          {errorMsg}
+        </p>
       )}
     </form>
   );

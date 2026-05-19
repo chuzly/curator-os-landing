@@ -49,3 +49,89 @@ body {
     @apply border-navy bg-navy text-white hover:bg-navy hover:text-white;
   }
 }
+
+/* ========================================================================
+   邹氏卡藏 brand textures — used on /cardmania, /cardmania/thanks
+   Apply by adding `brand-texture` class to a parent element.
+   ======================================================================== */
+.brand-texture {
+  position: relative;
+}
+
+/* Archive grain — faint gold dots across the surface */
+.brand-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(200,161,90,0.060), transparent 50%),
+    radial-gradient(1px 1px at 75% 60%, rgba(200,161,90,0.045), transparent 50%),
+    radial-gradient(1px 1px at 50% 85%, rgba(200,161,90,0.055), transparent 50%),
+    radial-gradient(1.5px 1.5px at 90% 15%, rgba(200,161,90,0.04), transparent 60%),
+    radial-gradient(1px 1px at 10% 90%, rgba(200,161,90,0.05), transparent 50%);
+  background-size: 280px 280px, 320px 320px, 240px 240px, 200px 200px, 360px 360px;
+  background-position: 0 0, 40px 40px, 80px 20px, 60px 100px, 120px 80px;
+  opacity: 0.85;
+}
+
+/* Ledger horizontal lines — faint ruled-paper feel */
+.brand-ledger-lines {
+  position: relative;
+}
+.brand-ledger-lines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 47px,
+    rgba(200, 161, 90, 0.045) 47px,
+    rgba(200, 161, 90, 0.045) 48px
+  );
+  opacity: 0.6;
+}
+
+/* Compass / radial spokes — decorative corner ornament */
+.brand-compass-mark {
+  position: absolute;
+  pointer-events: none;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    transparent 56%,
+    rgba(200, 161, 90, 0.085) 57%,
+    rgba(200, 161, 90, 0.085) 58%,
+    transparent 59%
+  );
+  opacity: 0.45;
+  z-index: 0;
+}
+.brand-compass-mark::before,
+.brand-compass-mark::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 50% 0;
+  border-top: 1px solid rgba(200, 161, 90, 0.10);
+  transform-origin: center;
+}
+.brand-compass-mark::after {
+  transform: rotate(90deg);
+}
+
+/* Vertical divider — gold rule with subtle gradient */
+.brand-rule-vertical {
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(200, 161, 90, 0.45),
+    transparent
+  );
+}
