@@ -56,11 +56,14 @@ const Q6_MAINLAND: Single[] = [
   { value: "unknown", label: "What's that? / 不知道这是什么" },
 ];
 
-const Q7_PAY: Single[] = [
-  { value: "under_30", label: "Yes, under RM 30 / month" },
-  { value: "30_99", label: "Yes, RM 30 – 99 / month" },
-  { value: "100_plus", label: "Yes, RM 100+ / month" },
-  { value: "free_only", label: "Free only / 只用免费的" },
+const Q7_PAID_SERVICES: Single[] = [
+  { value: "grading", label: "Yes — paid grading (PSA / CGC / Beckett / SGC) / 付费送评" },
+  { value: "price_db", label: "Yes — paid price database or app / 付费查价工具" },
+  { value: "content", label: "Yes — paid content (YouTube member, Patreon, newsletter, Discord) / 付费内容" },
+  { value: "sourcing", label: "Yes — paid sourcing or proxy service / 付费代购" },
+  { value: "consultation", label: "Yes — paid consultation or advisory / 付费咨询" },
+  { value: "other_paid", label: "Yes — other paid tool or service / 其他付费" },
+  { value: "never", label: "No — never paid for any TCG tool/service/content / 没有付费过" },
 ];
 
 const Q8_LANG: Single[] = [
@@ -94,7 +97,7 @@ type FormState = {
   apps: string[];
   jpCards: string;
   mainlandSellers: string;
-  payWillingness: string;
+  paidServices: string[];
   languagePref: string;
   painPoints: string[];
   painOther: string;
@@ -109,7 +112,7 @@ function emptyForm(): FormState {
     apps: [],
     jpCards: "",
     mainlandSellers: "",
-    payWillingness: "",
+    paidServices: [],
     languagePref: "",
     painPoints: [],
     painOther: "",
@@ -123,7 +126,7 @@ export default function CardManiaForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  function toggleMulti(field: "apps" | "painPoints", value: string) {
+  function toggleMulti(field: "apps" | "painPoints" | "paidServices", value: string) {
     setForm((prev) => {
       const list = prev[field];
       if (list.includes(value)) {
@@ -140,6 +143,10 @@ export default function CardManiaForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.paidServices.length === 0) {
+      setError("请回答 Q7 (付费经验) / Please answer Q7 (paid services).");
+      return;
+    }
     if (!form.wantsUpdates) {
       setError("请回答最后一题 / Please answer the last question.");
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -279,8 +286,8 @@ export default function CardManiaForm() {
           <SingleGrid options={Q6_MAINLAND} selected={form.mainlandSellers} onSelect={(v) => setSingle("mainlandSellers", v)} cols={1} />
         </Question>
 
-        <Question number={7} en="Would you pay monthly for a tool that tells you if a card is worth buying?" zh="如果有工具直接告诉你这张卡值不值得买, 你愿意付费吗?">
-          <SingleGrid options={Q7_PAY} selected={form.payWillingness} onSelect={(v) => setSingle("payWillingness", v)} cols={1} />
+        <Question number={7} en="In the last 6 months, have you paid for any TCG-related tool/service/content? (Pick all that apply)" zh="你最近6个月有付费买过 TCG 相关的工具/服务/内容吗? (可多选)" required>
+          <MultiGrid options={Q7_PAID_SERVICES} selected={form.paidServices} onToggle={(v) => toggleMulti("paidServices", v)} cols={1} />
         </Question>
 
         <Question number={8} en="What language do you prefer for tools?" zh="你希望工具用什么语言?">

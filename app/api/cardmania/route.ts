@@ -11,7 +11,7 @@ type Payload = {
   apps: string[];
   jpCards: string;
   mainlandSellers: string;
-  payWillingness: string;
+  paidServices: string[];
   languagePref: string;
   painPoints: string[];
   painOther: string;
@@ -27,7 +27,6 @@ function isValid(payload: unknown): payload is Payload {
     "monthlySpend",
     "jpCards",
     "mainlandSellers",
-    "payWillingness",
     "languagePref",
     "painOther",
     "wantsUpdates",
@@ -37,6 +36,8 @@ function isValid(payload: unknown): payload is Payload {
   }
   if (!Array.isArray(p.apps) || !p.apps.every((x) => typeof x === "string")) return false;
   if (!Array.isArray(p.painPoints) || !p.painPoints.every((x) => typeof x === "string")) return false;
+  if (!Array.isArray(p.paidServices) || !p.paidServices.every((x) => typeof x === "string")) return false;
+  if (p.paidServices.length === 0) return false; // Q7 is required, must have at least 1 selection
   if (typeof p.wantsUpdates !== "string" || p.wantsUpdates.length === 0) return false;
   return true;
 }
@@ -58,7 +59,7 @@ function buildBody(p: Payload) {
     ["Apps used", p.apps.length ? p.apps.join(", ") : "—"],
     ["JP cards", p.jpCards || "—"],
     ["Mainland CN sellers", p.mainlandSellers || "—"],
-    ["Pay willingness", p.payWillingness || "—"],
+    ["Paid services (last 6mo)", p.paidServices.length ? p.paidServices.join(", ") : "—"],
     ["Language pref", p.languagePref || "—"],
     ["Pain points", p.painPoints.length ? p.painPoints.join(", ") : "—"],
     ["Pain (other)", p.painOther || "—"],
@@ -114,7 +115,7 @@ export async function POST(req: Request) {
     apps_used: payload.apps,
     jp_cards: payload.jpCards || null,
     mainland_sellers: payload.mainlandSellers || null,
-    pay_willingness: payload.payWillingness || null,
+    pay_willingness: payload.paidServices,
     language_pref: payload.languagePref || null,
     pain_points: payload.painPoints,
     pain_other: payload.painOther || null,
