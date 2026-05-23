@@ -129,6 +129,25 @@ export default function CardManiaForm() {
   function toggleMulti(field: "apps" | "painPoints" | "paidServices", value: string) {
     setForm((prev) => {
       const list = prev[field];
+
+      // Q07 paidServices: "never" is mutually exclusive with all "yes" options
+      if (field === "paidServices") {
+        if (value === "never") {
+          // Toggling "never" → if already on, deselect; if off, set to only ["never"]
+          if (list.includes("never")) {
+            return { ...prev, [field]: [] };
+          }
+          return { ...prev, [field]: ["never"] };
+        }
+        // Toggling any "yes" option → remove "never" if present, then toggle
+        const withoutNever = list.filter((v) => v !== "never");
+        if (withoutNever.includes(value)) {
+          return { ...prev, [field]: withoutNever.filter((v) => v !== value) };
+        }
+        return { ...prev, [field]: [...withoutNever, value] };
+      }
+
+      // Default toggle behavior (apps, painPoints)
       if (list.includes(value)) {
         return { ...prev, [field]: list.filter((v) => v !== value) };
       }
