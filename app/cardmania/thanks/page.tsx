@@ -40,7 +40,9 @@ const SOCIAL_LINKS = [
 ];
 
 export default function ThanksPage({ searchParams }: ThanksPageProps) {
-  const wantsUpdates = searchParams?.u === "yes";
+  const u = searchParams?.u ?? "";
+  const wantsUpdates = u === "yes";
+  const showEmailCapture = u !== "no"; // show for "yes" + "maybe" + empty, hide only for explicit "no"
 
   return (
     <main className="brand-texture relative min-h-screen bg-brand-bg text-brand-cream font-brand-sans">
@@ -116,8 +118,8 @@ export default function ThanksPage({ searchParams }: ThanksPageProps) {
         </div>
       </section>
 
-      {/* Email capture — only if wants updates */}
-      {wantsUpdates && (
+      {/* Email capture — shows for "yes" + "maybe" + empty · hides only for explicit "no" */}
+      {showEmailCapture && (
         <section className="border-b border-brand-gold/20 bg-brand-panel-dark">
           <div className="mx-auto max-w-brand-content px-5 py-14 sm:px-6">
             <div className="mb-4 flex items-center gap-3">
